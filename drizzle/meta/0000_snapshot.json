@@ -1,0 +1,58 @@
+{
+  "id": "d5cca4f1-753b-4259-b60d-06ff3a247c9d",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "6",
+  "dialect": "postgresql",
+  "tables": {
+    "public.indicators": {
+      "name": "indicators",
+      "schema": "",
+      "columns": {
+        "index": {
+          "name": "index",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "english_name": {
+          "name": "english_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "spanish_alias": {
+          "name": "spanish_alias",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "indicators_english_name_unique": {
+          "name": "indicators_english_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "english_name"
+          ]
+        },
+        "indicators_spanish_alias_unique": {
+          "name": "indicators_spanish_alias_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "spanish_alias"
+          ]
+        }
+      }
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
