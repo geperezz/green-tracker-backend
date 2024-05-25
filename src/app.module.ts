@@ -6,6 +6,8 @@ import { DrizzleModule } from './drizzle/drizzle.module';
 import { ConfigModule } from './config/config.module';
 import { SuccessfulResponseBuilderModule } from './successful-response-builder/succesful-response-builder.module';
 
+import { UserModule } from './users/user.module';
+
 @Module({
   imports: [
     ConfigModule,
@@ -13,6 +15,7 @@ import { SuccessfulResponseBuilderModule } from './successful-response-builder/s
     SuccessfulResponseBuilderModule,
     ValidationModule,
     IndicatorsModule,
+    UserModule
   ],
 })
 export class AppModule {}
