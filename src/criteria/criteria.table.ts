@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import {
   integer,
   pgTable,
@@ -33,10 +32,3 @@ export const criteriaTable = pgTable(
     };
   },
 );
-
-export const criteriaRelations = relations(criteriaTable, ({ one }) => ({
-  indicator: one(indicatorsTable, {
-    fields: [criteriaTable.indicatorIndex],
-    references: [indicatorsTable.index],
-  }),
-}));
