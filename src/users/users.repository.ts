@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { count, eq } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
-import { usersTable } from './users.table'; // Asegúrate de tener una tabla de usuarios definida
+import { usersTable } from './users.table'; 
 import { PaginationOptions, paginationOptionsSchema } from 'src/pagination/schemas/pagination-options.schema';
-import { UserCreationDto } from './dtos/user-creation.dto'; // Ajusta el DTO para la creación de usuarios
-import { User, userSchema } from './schemas/user.schema'; // Ajusta el esquema de usuario y su importación
-import { UsersPage } from './schemas/users-page.schema'; // Ajusta el esquema para una página de usuarios
+import { UserCreationDto } from './dtos/user-creation.dto'; 
+import { User, userSchema } from './schemas/user.schema'; 
+import { UsersPage } from './schemas/users-page.schema'; 
 
 export class UsersRepositoryError extends Error {}
 export class UserNotFoundError extends UsersRepositoryError {}
@@ -18,7 +18,7 @@ export class InvalidReplacementDataError extends UsersRepositoryError {}
 @Injectable()
 export class UsersRepository {
   constructor(
-    private readonly drizzleClient: DrizzleClient, // Elimina la inyección de dependencia
+    private readonly drizzleClient: DrizzleClient, 
   ) {}
 
   async create(

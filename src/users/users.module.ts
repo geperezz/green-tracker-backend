@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 
-import { UsersRepository } from './users.repository'; // Importa el repositorio de usuarios
-import { UsersController } from './users.controller'; // Importa el controlador de usuarios
+import { UsersRepository } from './users.repository'; 
+import { UsersController } from './users.controller'; 
 
 @Module({
-  providers: [UsersRepository], // Usar el repositorio de usuarios en lugar del de indicadores
-  exports: [UsersRepository], // Exportar el repositorio de usuarios
-  controllers: [UsersController], // Usar el controlador de usuarios en lugar del de indicadores
+  providers: [UsersRepository], 
+  exports: [UsersRepository], 
+  controllers: [UsersController], 
 })
-export class UsersModule {} // Cambiar el nombre del módulo a UsersModule
+export class UsersModule {} 

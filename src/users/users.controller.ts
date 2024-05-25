@@ -40,7 +40,7 @@ export class UsersController {
 
   @Get()
   async findPage(
-    @Query() paginationOptionsDto: PaginationOptionsDto, // Ajusta el DTO de opciones de paginación
+    @Query() paginationOptionsDto: PaginationOptionsDto, 
   ): Promise<UsersPageDto> {
     const userSchemasPage = await this.userRepository.findPage(
       PaginationOptionsDto.toSchema(paginationOptionsDto),
