@@ -8,7 +8,10 @@ export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
-    const newUser = UserSchema.parse(createUserDto);
+    const newUser: User = {
+      rol: createUserDto.rol,
+      clave: createUserDto.clave,
+    };
     return this.userRepository.create(newUser);
   }
 
