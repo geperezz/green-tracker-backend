@@ -4,4 +4,7 @@ import { indicatorCreationSchema } from './indicator-creation.schema';
 
 export const indicatorReplacementSchema = indicatorCreationSchema;
 
+export const IndicatorReplacement = indicatorReplacementSchema.brand(
+  'IndicatorReplacement',
+);
 export type IndicatorReplacement = z.infer<typeof indicatorReplacementSchema>;
