@@ -20,7 +20,10 @@ import { IndicatorDto } from './dtos/indicator.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
 import { IndicatorsPageDto } from './dtos/indicators-page.dto';
 import { IndicatorReplacementDto } from './dtos/indicator-replacement.dto';
-import { IndicatorIndexDto } from './dtos/indicator-index.dto';
+import { IndicatorUniqueTraitDto } from './dtos/indicator-unique-trait.dto';
+import { IndicatorCreation } from './schemas/indicator-creation.schema';
+import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
+import { IndicatorUniqueTrait } from './schemas/indicator-unique-trait.schema';
 
 @Controller('/indicators/')
 @ApiTags('Indicators')
@@ -32,24 +35,25 @@ export class IndicatorsController {
     @Body()
     creationDataDto: IndicatorCreationDto,
   ): Promise<IndicatorDto> {
-    const createdIndicatorSchema =
-      await this.indicatorsRepository.create(creationDataDto);
+    const createdIndicatorSchema = await this.indicatorsRepository.create(
+      IndicatorCreation.parse(creationDataDto),
+    );
     return IndicatorDto.fromSchema(createdIndicatorSchema);
   }
 
   @Get('/:index/')
   async findOne(
     @Param()
-    indicatorIndexDto: IndicatorIndexDto,
+    indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
   ): Promise<IndicatorDto> {
     const indicatorSchema = await this.indicatorsRepository.findOne(
-      indicatorIndexDto.index,
+      IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
     );
 
     if (!indicatorSchema) {
       throw new NotFoundException(
         'Indicator not found',
-        `There is no indicator with index ${indicatorIndexDto.index}`,
+        `There is no indicator with index ${indicatorUniqueTraitDto.index}`,
       );
     }
 
@@ -62,7 +66,7 @@ export class IndicatorsController {
     paginationOptionsDto: PaginationOptionsDto,
   ): Promise<IndicatorsPageDto> {
     const indicatorSchemasPage = await this.indicatorsRepository.findPage(
-      PaginationOptionsDto.toSchema(paginationOptionsDto),
+      PaginationOptions.parse(paginationOptionsDto),
     );
 
     const indicatorDtosPage = {
@@ -78,13 +82,13 @@ export class IndicatorsController {
   @Put('/:index/')
   async replace(
     @Param()
-    indicatorIndexDto: IndicatorIndexDto,
+    indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
     @Body()
     replacementDataDto: IndicatorReplacementDto,
   ): Promise<IndicatorDto> {
     try {
       const newIndicatorSchema = await this.indicatorsRepository.replace(
-        indicatorIndexDto.index,
+        IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
         replacementDataDto,
       );
 
@@ -92,7 +96,7 @@ export class IndicatorsController {
     } catch (error) {
       if (error instanceof IndicatorNotFoundError) {
         throw new NotFoundException('Indicator not found', {
-          description: `There is no indicator with index ${indicatorIndexDto.index}`,
+          description: `There is no indicator with index ${indicatorUniqueTraitDto.index}`,
           cause: error,
         });
       }
@@ -104,18 +108,18 @@ export class IndicatorsController {
   @Delete('/:index/')
   async delete(
     @Param()
-    indicatorIndexDto: IndicatorIndexDto,
+    indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
   ): Promise<IndicatorDto> {
     try {
       const deletedIndicatorSchema = await this.indicatorsRepository.delete(
-        indicatorIndexDto.index,
+        IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
       );
 
       return IndicatorDto.fromSchema(deletedIndicatorSchema);
     } catch (error) {
       if (error instanceof IndicatorNotFoundError) {
         throw new NotFoundException('Indicator not found', {
-          description: `There is no indicator with index ${indicatorIndexDto.index}`,
+          description: `There is no indicator with index ${indicatorUniqueTraitDto.index}`,
           cause: error,
         });
       }

@@ -6,4 +6,5 @@ export const indicatorSchema = z.object({
   spanishAlias: z.string().trim().min(1),
 });
 
-export type Indicator = z.infer<typeof indicatorSchema>;
+export const Indicator = indicatorSchema.brand('Indicator');
+export type Indicator = z.infer<typeof Indicator>;

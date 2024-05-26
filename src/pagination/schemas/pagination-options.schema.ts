@@ -5,4 +5,6 @@ export const paginationOptionsSchema = z.object({
   itemsPerPage: z.number().int().min(1).default(10),
 });
 
+export const PaginationOptions =
+  paginationOptionsSchema.brand('PaginationOptions');
 export type PaginationOptions = z.infer<typeof paginationOptionsSchema>;
