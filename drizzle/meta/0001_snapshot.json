@@ -1,9 +1,110 @@
 {
-  "id": "4e1723ed-a883-4c28-9f04-9220540c4d74",
+  "id": "267f34ff-22d1-4dc9-99ed-4f07fd74ffce",
   "prevId": "d5cca4f1-753b-4259-b60d-06ff3a247c9d",
   "version": "6",
   "dialect": "postgresql",
   "tables": {
+    "public.criteria": {
+      "name": "criteria",
+      "schema": "",
+      "columns": {
+        "index": {
+          "name": "index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subindex": {
+          "name": "subindex",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "english_name": {
+          "name": "english_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "spanish_alias": {
+          "name": "spanish_alias",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_name": {
+          "name": "category_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "indicators_english_name_idx": {
+          "name": "indicators_english_name_idx",
+          "columns": [
+            "index",
+            "english_name"
+          ],
+          "isUnique": true
+        },
+        "indicators_spanish_alias_idx": {
+          "name": "indicators_spanish_alias_idx",
+          "columns": [
+            "index",
+            "spanish_alias"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "criteria_index_indicators_index_fk": {
+          "name": "criteria_index_indicators_index_fk",
+          "tableFrom": "criteria",
+          "tableTo": "indicators",
+          "columnsFrom": [
+            "index"
+          ],
+          "columnsTo": [
+            "index"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "criteria_index_subindex_pk": {
+          "name": "criteria_index_subindex_pk",
+          "columns": [
+            "index",
+            "subindex"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "criteria_subindex_unique": {
+          "name": "criteria_subindex_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "subindex"
+          ]
+        },
+        "criteria_english_name_unique": {
+          "name": "criteria_english_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "english_name"
+          ]
+        },
+        "criteria_spanish_alias_unique": {
+          "name": "criteria_spanish_alias_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "spanish_alias"
+          ]
+        }
+      }
+    },
     "public.indicators": {
       "name": "indicators",
       "schema": "",
@@ -46,48 +147,9 @@
           ]
         }
       }
-    },
-    "public.users": {
-      "name": "users",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "password": {
-          "name": "password",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "role": {
-          "name": "role",
-          "type": "user_role",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
     }
   },
-  "enums": {
-    "public.user_role": {
-      "name": "user_role",
-      "schema": "public",
-      "values": [
-        "unit",
-        "admin",
-        "superadmin"
-      ]
-    }
-  },
+  "enums": {},
   "schemas": {},
   "_meta": {
     "columns": {},

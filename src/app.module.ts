@@ -5,6 +5,7 @@ import { IndicatorsModule } from './indicators/indicators.module';
 import { DrizzleModule } from './drizzle/drizzle.module';
 import { ConfigModule } from './config/config.module';
 import { SuccessfulResponseBuilderModule } from './successful-response-builder/succesful-response-builder.module';
+import { CriteriaModule } from './criteria/criteria.module';
 
 import { UsersModule } from './users/users.module';
 
@@ -14,8 +15,9 @@ import { UsersModule } from './users/users.module';
     DrizzleModule,
     SuccessfulResponseBuilderModule,
     ValidationModule,
-    IndicatorsModule,
     UsersModule,
+    IndicatorsModule,
+    CriteriaModule,
   ],
 })
 export class AppModule {}
