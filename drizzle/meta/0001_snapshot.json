@@ -1,0 +1,97 @@
+{
+  "id": "4e1723ed-a883-4c28-9f04-9220540c4d74",
+  "prevId": "d5cca4f1-753b-4259-b60d-06ff3a247c9d",
+  "version": "6",
+  "dialect": "postgresql",
+  "tables": {
+    "public.indicators": {
+      "name": "indicators",
+      "schema": "",
+      "columns": {
+        "index": {
+          "name": "index",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "english_name": {
+          "name": "english_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "spanish_alias": {
+          "name": "spanish_alias",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "indicators_english_name_unique": {
+          "name": "indicators_english_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "english_name"
+          ]
+        },
+        "indicators_spanish_alias_unique": {
+          "name": "indicators_spanish_alias_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "spanish_alias"
+          ]
+        }
+      }
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "user_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {
+    "public.user_role": {
+      "name": "user_role",
+      "schema": "public",
+      "values": [
+        "unit",
+        "admin",
+        "superadmin"
+      ]
+    }
+  },
+  "schemas": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

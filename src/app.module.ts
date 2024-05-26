@@ -15,7 +15,7 @@ import { UsersModule } from './users/users.module';
     SuccessfulResponseBuilderModule,
     ValidationModule,
     IndicatorsModule,
-    UsersModule
+    UsersModule,
   ],
 })
 export class AppModule {}

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { count, eq } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
@@ -18,6 +18,7 @@ export class InvalidReplacementDataError extends UsersRepositoryError {}
 @Injectable()
 export class UsersRepository {
   constructor(
+    @Inject('DRIZZLE_CLIENT')
     private readonly drizzleClient: DrizzleClient, 
   ) {}
 

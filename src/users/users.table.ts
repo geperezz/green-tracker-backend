@@ -1,7 +1,9 @@
-import { integer, pgTable, text } from 'drizzle-orm/pg-core';
+import { pgTable, text, uuid, pgEnum } from 'drizzle-orm/pg-core';
+
+export const userRole = pgEnum('user_role', ['unit', 'admin', 'superadmin']);
 
 export const usersTable = pgTable('users', {
-  id: integer('id').primaryKey(), 
-  contrasena: text('contrasena').notNull(),
-  rol: text('rol').notNull(),
+  id: uuid('id').primaryKey(),
+  password: text('password').notNull(),
+  role: userRole('role').notNull(),
 });
