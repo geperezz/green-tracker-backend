@@ -11,6 +11,8 @@ const configSchema = z.object({
   POSTGRES_PORT: z.string().trim().min(1),
   POSTGRES_DATABASE_NAME: z.string().trim().min(1),
   POSTGRES_DATABASE_URL: z.string().url(),
+  SUPERADMIN_ID: z.string().uuid().trim().min(1),
+  SUPERADMIN_PASSWORD: z.string().trim().min(1),
 });
 
 export type Config = z.infer<typeof configSchema>;
