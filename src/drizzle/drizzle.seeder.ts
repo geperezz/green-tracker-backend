@@ -18,19 +18,22 @@ export class DrizzleSeeder {
     );
   }
 
-  //currently only one superadmin
   private async seedSuperadmins(
     transaction: DrizzleTransaction,
   ): Promise<void> {
-    const [seed] = superadminSeeds;
+    await Promise.all(
+      superadminSeeds.map(async (seed) => {
+        if (!seed.id) return null;
 
-    const seedAlreadyInDb = !!(await this.usersRepository.findByRole(
-      seed.role,
-      transaction,
-    ));
-    
-    if (!seedAlreadyInDb) {
-      await this.usersRepository.create(seed, transaction);
-    }
+        const seedAlreadyInDb = !!(await this.usersRepository.findOne(
+          seed.id,
+          transaction,
+        ));
+
+        if (!seedAlreadyInDb) {
+          await this.usersRepository.create(seed, transaction);
+        }
+      }),
+    );
   }
 }
