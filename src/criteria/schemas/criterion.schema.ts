@@ -8,4 +8,5 @@ export const criterionSchema = z.object({
   categoryName: z.string().trim().min(1),
 });
 
-export type Criterion = z.infer<typeof criterionSchema>;
+export const Criterion = criterionSchema.brand('Criterion');
+export type Criterion = z.infer<typeof Criterion>;

@@ -20,9 +20,13 @@ import { CriterionDto } from './dtos/criterion.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
 import { CriteriaPageDto } from './dtos/criteria-page.dto';
 import { CriterionReplacementDto } from './dtos/criterion-replacement.dto';
-import { CriterionIndexDto } from './dtos/criterion-index.dto';
+import { CriterionUniqueTraitDto } from './dtos/criterion-unique-trait.dto';
+import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
+import { CriterionCreation } from './schemas/criterion-creation.schema';
+import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
+import { CriterionReplacement } from './schemas/criterion-replacement.schema';
 
-@Controller('/criteria/')
+@Controller('/indicators/:indicatorIndex/criteria/')
 @ApiTags('Criteria')
 export class CriteriaController {
   constructor(private readonly criteriaRepository: CriteriaRepository) {}
@@ -32,25 +36,25 @@ export class CriteriaController {
     @Body()
     creationDataDto: CriterionCreationDto,
   ): Promise<CriterionDto> {
-    const createdCriterionSchema =
-      await this.criteriaRepository.create(creationDataDto);
+    const createdCriterionSchema = await this.criteriaRepository.create(
+      CriterionCreation.parse(creationDataDto),
+    );
     return CriterionDto.fromSchema(createdCriterionSchema);
   }
 
-  @Get('/:indicatorIndex/:subindex')
+  @Get('/:subindex/')
   async findOne(
     @Param()
-    criterionIndexDto: CriterionIndexDto,
+    criterionUniqueTraitDto: CriterionUniqueTraitDto,
   ): Promise<CriterionDto> {
     const criterionSchema = await this.criteriaRepository.findOne(
-      criterionIndexDto.indicatorIndex,
-      criterionIndexDto.subindex,
+      CriterionUniqueTrait.parse(criterionUniqueTraitDto),
     );
 
     if (!criterionSchema) {
       throw new NotFoundException(
         'Criterion not found',
-        `There is no criterion with index ${criterionIndexDto.indicatorIndex}.${criterionIndexDto.subindex}`,
+        `There is no criterion with index ${criterionUniqueTraitDto.indicatorIndex}.${criterionUniqueTraitDto.subindex}`,
       );
     }
 
@@ -63,7 +67,7 @@ export class CriteriaController {
     paginationOptionsDto: PaginationOptionsDto,
   ): Promise<CriteriaPageDto> {
     const criterionSchemasPage = await this.criteriaRepository.findPage(
-      PaginationOptionsDto.toSchema(paginationOptionsDto),
+      PaginationOptions.parse(paginationOptionsDto),
     );
 
     const criterionDtosPage = {
@@ -76,25 +80,24 @@ export class CriteriaController {
     return criterionDtosPage;
   }
 
-  @Put('/:indicatorIndex/:subindex')
+  @Put('/:subindex/')
   async replace(
     @Param()
-    criterionIndexDto: CriterionIndexDto,
+    criterionUniqueTraitDto: CriterionUniqueTraitDto,
     @Body()
     replacementDataDto: CriterionReplacementDto,
   ): Promise<CriterionDto> {
     try {
       const newCriterionSchema = await this.criteriaRepository.replace(
-        criterionIndexDto.indicatorIndex,
-        criterionIndexDto.subindex,
-        replacementDataDto,
+        CriterionUniqueTrait.parse(criterionUniqueTraitDto),
+        CriterionReplacement.parse(replacementDataDto),
       );
 
       return CriterionDto.fromSchema(newCriterionSchema);
     } catch (error) {
       if (error instanceof CriterionNotFoundError) {
         throw new NotFoundException('Criterion not found', {
-          description: `There is no criterion with index ${criterionIndexDto.indicatorIndex}.${criterionIndexDto.subindex}`,
+          description: `There is no criterion with index ${criterionUniqueTraitDto.indicatorIndex}.${criterionUniqueTraitDto.subindex}`,
           cause: error,
         });
       }
@@ -103,22 +106,21 @@ export class CriteriaController {
     }
   }
 
-  @Delete('/:indicatorIndex/:subindex')
+  @Delete('/:subindex/')
   async delete(
     @Param()
-    criterionIndexDto: CriterionIndexDto,
+    criterionUniqueTraitDto: CriterionUniqueTraitDto,
   ): Promise<CriterionDto> {
     try {
       const deletedCriterionSchema = await this.criteriaRepository.delete(
-        criterionIndexDto.indicatorIndex,
-        criterionIndexDto.subindex,
+        CriterionUniqueTrait.parse(criterionUniqueTraitDto),
       );
 
       return CriterionDto.fromSchema(deletedCriterionSchema);
     } catch (error) {
       if (error instanceof CriterionNotFoundError) {
         throw new NotFoundException('Criterion not found', {
-          description: `There is no criterion with index ${criterionIndexDto.indicatorIndex}.${criterionIndexDto.subindex}`,
+          description: `There is no criterion with index ${criterionUniqueTraitDto.indicatorIndex}.${criterionUniqueTraitDto.subindex}`,
           cause: error,
         });
       }

@@ -3,28 +3,15 @@ import { and, count, eq } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
 import { criteriaTable } from './criteria.table';
-import {
-  PaginationOptions,
-  paginationOptionsSchema,
-} from 'src/pagination/schemas/pagination-options.schema';
-import {
-  CriterionCreation,
-  criterionCreationSchema,
-} from './schemas/criterion-creation.schema';
-import { Criterion, criterionSchema } from './schemas/criterion.schema';
+import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
+import { CriterionCreation } from './schemas/criterion-creation.schema';
+import { Criterion } from './schemas/criterion.schema';
 import { CriteriaPage } from './schemas/criteria-page.schema';
-import {
-  CriterionReplacement,
-  criterionReplacementSchema,
-} from './schemas/criterion-replacement.schema';
+import { CriterionReplacement } from './schemas/criterion-replacement.schema';
+import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
 
-export class CriteriaRepositoryError extends Error {}
+export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
-export class InvalidCriterionIndexError extends CriteriaRepositoryError {}
-export class InvalidCriterionForeignKeyError extends CriteriaRepositoryError {}
-export class InvalidPaginationOptionsError extends CriteriaRepositoryError {}
-export class InvalidCreationDataError extends CriteriaRepositoryError {}
-export class InvalidReplacementDataError extends CriteriaRepositoryError {}
 
 @Injectable()
 export class CriteriaRepository {
@@ -39,53 +26,39 @@ export class CriteriaRepository {
   ): Promise<Criterion> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        creationData = this.parseCreationData(creationData);
-
         const [createdCriterion] = await transaction
           .insert(criteriaTable)
           .values(creationData)
           .returning();
 
-        return criterionSchema.parse(createdCriterion);
+        return Criterion.parse(createdCriterion);
       },
     );
   }
 
-  private parseCreationData(creationData: unknown): CriterionCreation {
-    const replacementDataParsingResult =
-      criterionCreationSchema.safeParse(creationData);
-    if (!replacementDataParsingResult.success) {
-      throw new InvalidCreationDataError(undefined, {
-        cause: replacementDataParsingResult.error,
-      });
-    }
-    return replacementDataParsingResult.data;
-  }
-
   async findOne(
-    indicatorIndex: Criterion['indicatorIndex'],
-    subindex: Criterion['subindex'],
+    criterionUniqueTrait: CriterionUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion | null> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        indicatorIndex = this.parseIndicatorIndex(indicatorIndex);
-        subindex = this.parseCriterionSubindex(subindex);
-
         const [foundCriterion = null] = await transaction
           .select()
           .from(criteriaTable)
           .where(
             and(
-              eq(criteriaTable.indicatorIndex, indicatorIndex),
-              eq(criteriaTable.subindex, subindex),
+              eq(
+                criteriaTable.indicatorIndex,
+                criterionUniqueTrait.indicatorIndex,
+              ),
+              eq(criteriaTable.subindex, criterionUniqueTrait.subindex),
             ),
           );
 
         if (!foundCriterion) {
           return null;
         }
-        return criterionSchema.parse(foundCriterion);
+        return Criterion.parse(foundCriterion);
       },
     );
   }
@@ -96,8 +69,6 @@ export class CriteriaRepository {
   ): Promise<CriteriaPage> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        paginationOptions = this.parsePaginationOptions(paginationOptions);
-
         const criteriaPageQuery = transaction
           .select()
           .from(criteriaTable)
@@ -111,7 +82,7 @@ export class CriteriaRepository {
           .select()
           .from(criteriaPageQuery);
         const criteriaPage = nonValidatedCriteriaPage.map((criterion) =>
-          criterionSchema.parse(criterion),
+          Criterion.parse(criterion),
         );
 
         const [{ criteriaCount }] = await transaction
@@ -120,48 +91,33 @@ export class CriteriaRepository {
           })
           .from(criteriaPageQuery);
 
-        return {
+        return CriteriaPage.parse({
           items: criteriaPage,
           ...paginationOptions,
           pageCount: Math.ceil(criteriaCount / paginationOptions.itemsPerPage),
           itemCount: criteriaCount,
-        };
+        });
       },
     );
   }
 
-  private parsePaginationOptions(
-    paginationOptions: unknown,
-  ): PaginationOptions {
-    const paginationOptionsParsingResult =
-      paginationOptionsSchema.safeParse(paginationOptions);
-    if (!paginationOptionsParsingResult.success) {
-      throw new InvalidPaginationOptionsError(undefined, {
-        cause: paginationOptionsParsingResult.error,
-      });
-    }
-    return paginationOptionsParsingResult.data;
-  }
-
   async replace(
-    indicatorIndex: Criterion['indicatorIndex'],
-    subindex: Criterion['subindex'],
+    criterionUniqueTrait: CriterionUniqueTrait,
     replacementData: CriterionReplacement,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        indicatorIndex = this.parseIndicatorIndex(indicatorIndex);
-        subindex = this.parseCriterionSubindex(subindex);
-        replacementData = this.parseReplacementData(replacementData);
-
         const [replacedCriterion = null] = await transaction
           .update(criteriaTable)
           .set(replacementData)
           .where(
             and(
-              eq(criteriaTable.indicatorIndex, indicatorIndex),
-              eq(criteriaTable.subindex, subindex),
+              eq(
+                criteriaTable.indicatorIndex,
+                criterionUniqueTrait.indicatorIndex,
+              ),
+              eq(criteriaTable.subindex, criterionUniqueTrait.subindex),
             ),
           )
           .returning();
@@ -169,38 +125,26 @@ export class CriteriaRepository {
           throw new CriterionNotFoundError();
         }
 
-        return criterionSchema.parse(replacedCriterion);
+        return Criterion.parse(replacedCriterion);
       },
     );
   }
 
-  private parseReplacementData(replacementData: unknown): CriterionReplacement {
-    const replacementDataParsingResult =
-      criterionReplacementSchema.safeParse(replacementData);
-    if (!replacementDataParsingResult.success) {
-      throw new InvalidReplacementDataError(undefined, {
-        cause: replacementDataParsingResult.error,
-      });
-    }
-    return replacementDataParsingResult.data;
-  }
-
   async delete(
-    indicatorIndex: Criterion['indicatorIndex'],
-    subindex: Criterion['subindex'],
+    criterionUniqueTrait: CriterionUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        indicatorIndex = this.parseIndicatorIndex(indicatorIndex);
-        subindex = this.parseCriterionSubindex(subindex);
-
         const [deletedCriterion = null] = await transaction
           .delete(criteriaTable)
           .where(
             and(
-              eq(criteriaTable.indicatorIndex, indicatorIndex),
-              eq(criteriaTable.subindex, subindex),
+              eq(
+                criteriaTable.indicatorIndex,
+                criterionUniqueTrait.indicatorIndex,
+              ),
+              eq(criteriaTable.subindex, criterionUniqueTrait.subindex),
             ),
           )
           .returning();
@@ -208,30 +152,8 @@ export class CriteriaRepository {
           throw new CriterionNotFoundError();
         }
 
-        return criterionSchema.parse(deletedCriterion);
+        return Criterion.parse(deletedCriterion);
       },
     );
-  }
-
-  private parseIndicatorIndex(indicatorIndex: unknown): Criterion['indicatorIndex'] {
-    const indicatorIndexParsingResult =
-      criterionSchema.shape.indicatorIndex.safeParse(indicatorIndex);
-    if (!indicatorIndexParsingResult.success) {
-      throw new InvalidCriterionIndexError(undefined, {
-        cause: indicatorIndexParsingResult.error,
-      });
-    }
-    return indicatorIndexParsingResult.data;
-  }
-
-  private parseCriterionSubindex(criterionSubindex: unknown): Criterion['subindex'] {
-    const criterionSubindexParsingResult =
-      criterionSchema.shape.subindex.safeParse(criterionSubindex);
-    if (!criterionSubindexParsingResult.success) {
-      throw new InvalidCriterionIndexError(undefined, {
-        cause: criterionSubindexParsingResult.error,
-      });
-    }
-    return criterionSubindexParsingResult.data;
   }
 }
