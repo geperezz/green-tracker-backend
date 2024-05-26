@@ -56,6 +56,25 @@ export class UsersRepository {
       },
     );
   }
+  
+  async findByRole(
+    userRole: User['role'],
+    transaction?: DrizzleTransaction,
+  ): Promise<User | null> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const [foundUser = null] = await transaction
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.role, userRole));
+
+        if (!foundUser) {
+          return null;
+        }
+        return userSchema.parse(foundUser);
+      },
+    );
+  }
 
   async findPage(
     paginationOptions: PaginationOptions,

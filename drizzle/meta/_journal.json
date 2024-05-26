@@ -15,6 +15,13 @@
       "when": 1716741310958,
       "tag": "0001_complete_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1716748932080,
+      "tag": "0002_glamorous_gamma_corps",
+      "breakpoints": true
     }
   ]
 }
