@@ -1,3 +1,4 @@
+import { foreignKey } from 'drizzle-orm/pg-core';
 import {
   integer,
   pgTable,
@@ -5,30 +6,41 @@ import {
   text,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+
+import { categoriesTable } from 'src/categories/categories.table';
 import { indicatorsTable } from 'src/indicators/indicators.table';
 
 export const criteriaTable = pgTable(
   'criteria',
   {
-    indicatorIndex: integer('index').references(() => indicatorsTable.index),
+    indicatorIndex: integer('index').references(() => indicatorsTable.index, {
+      onUpdate: 'cascade',
+      onDelete: 'cascade',
+    }),
     subindex: integer('subindex').notNull().unique(),
     englishName: text('english_name').notNull().unique(),
     spanishAlias: text('spanish_alias').notNull().unique(),
     categoryName: text('category_name').notNull(),
   },
-  (criteria) => {
+  (criteriaTable) => {
     return {
       primaryKey: primaryKey({
-        columns: [criteria.indicatorIndex, criteria.subindex],
+        columns: [criteriaTable.indicatorIndex, criteriaTable.subindex],
       }),
-      englishNameIndex: uniqueIndex('indicators_english_name_idx').on(
-        criteria.indicatorIndex,
-        criteria.englishName,
+      englishNameIndex: uniqueIndex().on(
+        criteriaTable.indicatorIndex,
+        criteriaTable.englishName,
       ),
-      spanishAliasIndex: uniqueIndex('indicators_spanish_alias_idx').on(
-        criteria.indicatorIndex,
-        criteria.spanishAlias,
+      spanishAliasIndex: uniqueIndex().on(
+        criteriaTable.indicatorIndex,
+        criteriaTable.spanishAlias,
       ),
+      categoryForeignKey: foreignKey({
+        columns: [criteriaTable.indicatorIndex, criteriaTable.categoryName],
+        foreignColumns: [categoriesTable.indicatorIndex, categoriesTable.name],
+      })
+        .onUpdate('cascade')
+        .onDelete('restrict'),
     };
   },
 );
