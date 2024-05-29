@@ -1,7 +1,8 @@
 import { z } from 'nestjs-zod/z';
 import { buildPageSchema } from 'src/pagination/schemas/page.schema';
-import { userSchema } from './user.schema'; 
+import { User } from './user.schema';
 
-export const usersPageSchema = buildPageSchema(userSchema); 
+export const usersPageSchema = buildPageSchema(User);
 
-export type UsersPage = z.infer<typeof usersPageSchema>; 
+export const UsersPage = usersPageSchema.brand('UsersPage');
+export type UsersPage = z.infer<typeof UsersPage>;

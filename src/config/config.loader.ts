@@ -2,6 +2,7 @@ import { ZodError, z } from 'nestjs-zod/z';
 import * as dotenv from 'dotenv';
 import * as dotenvExpand from 'dotenv-expand';
 import { fromError } from 'zod-validation-error';
+import { userCreationDtoSchema } from 'src/users/dtos/user-creation.dto';
 
 const configSchema = z.object({
   APP_PORT: z.coerce.number().min(0),
@@ -11,8 +12,12 @@ const configSchema = z.object({
   POSTGRES_PORT: z.string().trim().min(1),
   POSTGRES_DATABASE_NAME: z.string().trim().min(1),
   POSTGRES_DATABASE_URL: z.string().url(),
-  SUPERADMIN_ID: z.string().uuid().trim().min(1),
-  SUPERADMIN_PASSWORD: z.string().trim().min(1),
+  SUPERADMIN_ID: userCreationDtoSchema.shape.id,
+  SUPERADMIN_NAME: userCreationDtoSchema.shape.name,
+  SUPERADMIN_EMAIL: userCreationDtoSchema.shape.email,
+  SUPERADMIN_PASSWORD: userCreationDtoSchema.shape.password,
+  AUTHENTICATION_TOKEN_SECRET: z.string().trim().min(1),
+  AUTHENTICATION_TOKEN_EXPIRES_IN: z.string().trim().min(1),
 });
 
 export type Config = z.infer<typeof configSchema>;

@@ -1,13 +1,17 @@
 import { Inject } from '@nestjs/common';
-import { UsersRepository } from 'src/users/users.repository';
 import { DrizzleClient, DrizzleTransaction } from './drizzle.client';
-import { superadminSeeds } from './seeds/superadmin.seeds';
+import { Config } from 'src/config/config.loader';
+import { UsersService } from 'src/users/users.service';
+import { UserCreationDto } from 'src/users/dtos/user-creation.dto';
+import { UserFiltersDto } from 'src/users/dtos/user-filters.dto';
 
 export class DrizzleSeeder {
   constructor(
+    @Inject('CONFIG')
+    private readonly config: Config,
     @Inject('DRIZZLE_CLIENT')
     private readonly drizzleClient: DrizzleClient,
-    private readonly usersRepository: UsersRepository,
+    private readonly usersService: UsersService,
   ) {}
 
   async seed(transaction?: DrizzleTransaction): Promise<void> {
@@ -21,19 +25,26 @@ export class DrizzleSeeder {
   private async seedSuperadmins(
     transaction: DrizzleTransaction,
   ): Promise<void> {
-    await Promise.all(
-      superadminSeeds.map(async (seed) => {
-        if (!seed.id) return null;
+    const superAdminToCreate = {
+      id: this.config.SUPERADMIN_ID,
+      name: this.config.SUPERADMIN_NAME,
+      email: this.config.SUPERADMIN_EMAIL,
+      password: this.config.SUPERADMIN_PASSWORD,
+      role: 'superadmin',
+    } as const;
 
-        const seedAlreadyInDb = !!(await this.usersRepository.findOne(
-          seed.id,
-          transaction,
-        ));
+    const seedAlreadyInDb = !!(
+      await this.usersService.findAll(
+        UserFiltersDto.create({ email: superAdminToCreate.email }),
+        transaction,
+      )
+    ).length;
 
-        if (!seedAlreadyInDb) {
-          await this.usersRepository.create(seed, transaction);
-        }
-      }),
-    );
+    if (!seedAlreadyInDb) {
+      await this.usersService.create(
+        UserCreationDto.create(superAdminToCreate),
+        transaction,
+      );
+    }
   }
 }

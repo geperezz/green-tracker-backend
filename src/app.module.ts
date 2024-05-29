@@ -6,8 +6,8 @@ import { DrizzleModule } from './drizzle/drizzle.module';
 import { ConfigModule } from './config/config.module';
 import { SuccessfulResponseBuilderModule } from './successful-response-builder/succesful-response-builder.module';
 import { CriteriaModule } from './criteria/criteria.module';
-
 import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -15,6 +15,7 @@ import { UsersModule } from './users/users.module';
     DrizzleModule,
     SuccessfulResponseBuilderModule,
     ValidationModule,
+    AuthModule,
     UsersModule,
     IndicatorsModule,
     CriteriaModule,

@@ -24,9 +24,12 @@ import { IndicatorUniqueTraitDto } from './dtos/indicator-unique-trait.dto';
 import { IndicatorCreation } from './schemas/indicator-creation.schema';
 import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
 import { IndicatorUniqueTrait } from './schemas/indicator-unique-trait.schema';
+import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
+import { IndicatorReplacement } from './schemas/indicator-replacement.schema';
 
 @Controller('/indicators/')
 @ApiTags('Indicators')
+@LoggedInAs('superadmin', 'admin')
 export class IndicatorsController {
   constructor(private readonly indicatorsRepository: IndicatorsRepository) {}
 
@@ -42,6 +45,7 @@ export class IndicatorsController {
   }
 
   @Get('/:index/')
+  @LoggedInAs('unit')
   async findOne(
     @Param()
     indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
@@ -61,6 +65,7 @@ export class IndicatorsController {
   }
 
   @Get()
+  @LoggedInAs('unit')
   async findPage(
     @Query()
     paginationOptionsDto: PaginationOptionsDto,
@@ -89,7 +94,7 @@ export class IndicatorsController {
     try {
       const newIndicatorSchema = await this.indicatorsRepository.replace(
         IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
-        replacementDataDto,
+        IndicatorReplacement.parse(replacementDataDto),
       );
 
       return IndicatorDto.fromSchema(newIndicatorSchema);

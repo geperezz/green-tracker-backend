@@ -1,6 +1,9 @@
-import { buildPageDtoClass, buildPageDtoSchema } from 'src/pagination/dtos/page.dto';
-import { userDtoSchema } from './user.dto'; 
+import {
+  buildPageDtoClass,
+  buildPageDtoSchema,
+} from 'src/pagination/dtos/page.dto';
+import { userDtoSchema } from './user.dto';
 
-export const usersPageDtoSchema = buildPageDtoSchema(userDtoSchema); 
+export const usersPageDtoSchema = buildPageDtoSchema(userDtoSchema);
 
-export class UsersPageDto extends buildPageDtoClass(userDtoSchema) {} 
+export class UsersPageDto extends buildPageDtoClass(userDtoSchema) {}

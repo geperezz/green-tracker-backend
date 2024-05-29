@@ -3,10 +3,17 @@ import { createZodDto } from 'nestjs-zod';
 import { criterionDtoSchema } from './criterion.dto';
 import { z } from 'nestjs-zod/z';
 
+export const criterionUniqueTraitDtoSchema = criterionDtoSchema.pick({
+  indicatorIndex: true,
+  subindex: true,
+});
+
+type InferredCriterionUniqueTraitDto = z.infer<typeof criterionDtoSchema>;
+
 export class CriterionUniqueTraitDto extends createZodDto(
-  criterionDtoSchema.pick({ indicatorIndex: true, subindex: true }),
+  criterionUniqueTraitDtoSchema,
 ) {
-  indicatorIndex: z.infer<typeof criterionDtoSchema>['indicatorIndex'] = super
+  indicatorIndex: InferredCriterionUniqueTraitDto['indicatorIndex'] = super
     .indicatorIndex;
-  subindex: z.infer<typeof criterionDtoSchema>['subindex'] = super.subindex;
+  subindex: InferredCriterionUniqueTraitDto['subindex'] = super.subindex;
 }

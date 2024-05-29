@@ -25,9 +25,11 @@ import { PaginationOptions } from 'src/pagination/schemas/pagination-options.sch
 import { CriterionCreation } from './schemas/criterion-creation.schema';
 import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
 import { CriterionReplacement } from './schemas/criterion-replacement.schema';
+import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 
 @Controller('/indicators/:indicatorIndex/criteria/')
 @ApiTags('Criteria')
+@LoggedInAs('superadmin', 'admin')
 export class CriteriaController {
   constructor(private readonly criteriaRepository: CriteriaRepository) {}
 
@@ -43,6 +45,7 @@ export class CriteriaController {
   }
 
   @Get('/:subindex/')
+  @LoggedInAs('unit')
   async findOne(
     @Param()
     criterionUniqueTraitDto: CriterionUniqueTraitDto,
@@ -62,6 +65,7 @@ export class CriteriaController {
   }
 
   @Get()
+  @LoggedInAs('unit')
   async findPage(
     @Query()
     paginationOptionsDto: PaginationOptionsDto,

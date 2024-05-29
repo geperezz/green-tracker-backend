@@ -25,6 +25,7 @@ function addSwaggerSupport(app: INestApplication): void {
     .setTitle('GreenTracker')
     .setDescription('The GreenTracker API documentation')
     .setVersion(version)
+    .addBearerAuth()
     .build();
   const openApiDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, openApiDocument);

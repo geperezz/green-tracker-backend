@@ -7,4 +7,4 @@ export const indicatorReplacementSchema = indicatorCreationSchema;
 export const IndicatorReplacement = indicatorReplacementSchema.brand(
   'IndicatorReplacement',
 );
-export type IndicatorReplacement = z.infer<typeof indicatorReplacementSchema>;
+export type IndicatorReplacement = z.infer<typeof IndicatorReplacement>;

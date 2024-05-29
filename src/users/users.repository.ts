@@ -1,29 +1,28 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { count, eq } from 'drizzle-orm';
+import { SQL, and, count, eq } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
-import { usersTable } from './users.table'; 
-import { PaginationOptions, paginationOptionsSchema } from 'src/pagination/schemas/pagination-options.schema';
-import { UserCreationDto } from './dtos/user-creation.dto'; 
-import { User, userSchema } from './schemas/user.schema'; 
-import { UsersPage } from './schemas/users-page.schema'; 
+import { usersTable } from './users.table';
+import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
+import { User } from './schemas/user.schema';
+import { UsersPage } from './schemas/users-page.schema';
+import { UserCreation } from './schemas/user-creation.schema';
+import { UserUniqueTrait } from './schemas/user-unique-trait.schema';
+import { UserReplacement } from './schemas/user-replacement.schema';
+import { UserFilters } from './schemas/user-filters.schema';
 
-export class UsersRepositoryError extends Error {}
+export abstract class UsersRepositoryError extends Error {}
 export class UserNotFoundError extends UsersRepositoryError {}
-export class InvalidUserIdError extends UsersRepositoryError {}
-export class InvalidPaginationOptionsError extends UsersRepositoryError {}
-export class InvalidCreationDataError extends UsersRepositoryError {}
-export class InvalidReplacementDataError extends UsersRepositoryError {}
 
 @Injectable()
 export class UsersRepository {
   constructor(
     @Inject('DRIZZLE_CLIENT')
-    private readonly drizzleClient: DrizzleClient, 
+    private readonly drizzleClient: DrizzleClient,
   ) {}
 
   async create(
-    creationData: UserCreationDto,
+    creationData: UserCreation,
     transaction?: DrizzleTransaction,
   ): Promise<User> {
     return await (transaction ?? this.drizzleClient).transaction(
@@ -33,13 +32,13 @@ export class UsersRepository {
           .values(creationData)
           .returning();
 
-        return userSchema.parse(createdUser);
+        return User.parse(createdUser);
       },
     );
   }
 
   async findOne(
-    userId: User['id'],
+    userUniqueTrait: UserUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<User | null> {
     return await (transaction ?? this.drizzleClient).transaction(
@@ -47,18 +46,35 @@ export class UsersRepository {
         const [foundUser = null] = await transaction
           .select()
           .from(usersTable)
-          .where(eq(usersTable.id, userId));
+          .where(eq(usersTable.id, userUniqueTrait.id));
 
         if (!foundUser) {
           return null;
         }
-        return userSchema.parse(foundUser);
+        return User.parse(foundUser);
+      },
+    );
+  }
+
+  async findAll(
+    filters?: UserFilters,
+    transaction?: DrizzleTransaction,
+  ): Promise<User[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const nonValidatedUsers = await transaction
+          .select()
+          .from(usersTable)
+          .where(this.transformFiltersToWhereConditions(filters));
+
+        return nonValidatedUsers.map((user) => User.parse(user));
       },
     );
   }
 
   async findPage(
     paginationOptions: PaginationOptions,
+    filters?: UserFilters,
     transaction?: DrizzleTransaction,
   ): Promise<UsersPage> {
     return await (transaction ?? this.drizzleClient).transaction(
@@ -66,6 +82,7 @@ export class UsersRepository {
         const usersPageQuery = transaction
           .select()
           .from(usersTable)
+          .where(this.transformFiltersToWhereConditions(filters))
           .limit(paginationOptions.itemsPerPage)
           .offset(
             paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
@@ -75,9 +92,7 @@ export class UsersRepository {
         const nonValidatedUsersPage = await transaction
           .select()
           .from(usersPageQuery);
-        const usersPage = nonValidatedUsersPage.map((user) =>
-          userSchema.parse(user),
-        );
+        const usersPage = nonValidatedUsersPage.map((user) => User.parse(user));
 
         const [{ usersCount }] = await transaction
           .select({
@@ -85,19 +100,29 @@ export class UsersRepository {
           })
           .from(usersPageQuery);
 
-        return {
+        return UsersPage.parse({
           items: usersPage,
           ...paginationOptions,
           pageCount: Math.ceil(usersCount / paginationOptions.itemsPerPage),
           itemCount: usersCount,
-        };
+        });
       },
     );
   }
 
+  private transformFiltersToWhereConditions(filters?: UserFilters) {
+    return and(
+      filters?.id ? eq(usersTable.id, filters.id) : undefined,
+      filters?.name ? eq(usersTable.name, filters.name) : undefined,
+      filters?.email ? eq(usersTable.email, filters.email) : undefined,
+      filters?.password ? eq(usersTable.password, filters.password) : undefined,
+      filters?.role ? eq(usersTable.role, filters.role) : undefined,
+    );
+  }
+
   async replace(
-    userId: User['id'],
-    replacementData: Partial<User>,
+    userUniqueTrait: UserUniqueTrait,
+    replacementData: UserReplacement,
     transaction?: DrizzleTransaction,
   ): Promise<User> {
     return await (transaction ?? this.drizzleClient).transaction(
@@ -105,32 +130,32 @@ export class UsersRepository {
         const [replacedUser = null] = await transaction
           .update(usersTable)
           .set(replacementData)
-          .where(eq(usersTable.id, userId))
+          .where(eq(usersTable.id, userUniqueTrait.id))
           .returning();
         if (!replacedUser) {
           throw new UserNotFoundError();
         }
 
-        return userSchema.parse(replacedUser);
+        return User.parse(replacedUser);
       },
     );
   }
 
   async delete(
-    userId: User['id'],
+    userUniqueTrait: UserUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<User> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
         const [deletedUser = null] = await transaction
           .delete(usersTable)
-          .where(eq(usersTable.id, userId))
+          .where(eq(usersTable.id, userUniqueTrait.id))
           .returning();
         if (!deletedUser) {
           throw new UserNotFoundError();
         }
 
-        return userSchema.parse(deletedUser);
+        return User.parse(deletedUser);
       },
     );
   }

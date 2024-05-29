@@ -8,7 +8,7 @@ import { UsersModule } from 'src/users/users.module';
 
 @Global()
 @Module({
-  imports: [forwardRef(() => UsersModule)],
+  imports: [UsersModule],
   providers: [
     {
       provide: 'DRIZZLE_CLIENT',

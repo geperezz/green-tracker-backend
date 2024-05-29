@@ -1,6 +1,6 @@
 {
-  "id": "094e2d9f-9ba8-42cc-a3a2-76d9b3d4cf4f",
-  "prevId": "267f34ff-22d1-4dc9-99ed-4f07fd74ffce",
+  "id": "684ddc35-9dcc-4b3a-8519-e454a6e01be4",
+  "prevId": "094e2d9f-9ba8-42cc-a3a2-76d9b3d4cf4f",
   "version": "6",
   "dialect": "postgresql",
   "tables": {
@@ -159,6 +159,18 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "password": {
           "name": "password",
           "type": "text",
@@ -176,7 +188,15 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      }
     }
   },
   "enums": {

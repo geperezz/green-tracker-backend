@@ -7,8 +7,12 @@ export const indicatorUniqueTraitDtoSchema = indicatorDtoSchema.pick({
   index: true,
 });
 
+type InferredIndicatorUniqueTraitDto = z.infer<
+  typeof indicatorUniqueTraitDtoSchema
+>;
+
 export class IndicatorUniqueTraitDto extends createZodDto(
   indicatorUniqueTraitDtoSchema,
 ) {
-  index: z.infer<typeof indicatorDtoSchema>['index'] = super.index;
+  index: InferredIndicatorUniqueTraitDto['index'] = super.index;
 }
