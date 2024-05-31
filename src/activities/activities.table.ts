@@ -14,6 +14,7 @@ export const activitiesTable = pgTable(
   'activities',
   {
     id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
     summary: text('summary').notNull(),
     indicatorIndex: integer('indicator_index').notNull(),
     categoryName: text('category_name').notNull(),
