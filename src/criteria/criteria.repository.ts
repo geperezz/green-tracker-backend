@@ -10,6 +10,7 @@ import { CriteriaPage } from './schemas/criteria-page.schema';
 import { CriterionReplacement } from './schemas/criterion-replacement.schema';
 import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
 import { CriterionIndicatorIndex } from './schemas/criterion-indicator-index.schema';
+import { CriterionCreationPath } from './schemas/criterion-creation-path.schema';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
