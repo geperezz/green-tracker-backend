@@ -27,7 +27,7 @@ import { CategoryUniqueTrait } from './schemas/category-unique-trait.schema';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 import { CategoryReplacement } from './schemas/category-replacement.schema';
 
-@Controller('/categories/')
+@Controller('/indicators/:indicatorIndex/categories/')
 @ApiTags('Categories')
 @LoggedInAs('superadmin', 'admin')
 export class CategoriesController {
@@ -44,7 +44,7 @@ export class CategoriesController {
     return CategoryDto.fromSchema(createdCategorySchema);
   }
 
-  @Get('/:indicatorIndex/:name')
+  @Get('/:name/')
   @LoggedInAs('unit')
   async findOne(
     @Param()
@@ -84,7 +84,7 @@ export class CategoriesController {
     return categoryDtosPage;
   }
 
-  @Put('/:indicatorIndex/:name')
+  @Put('/:name/')
   async replace(
     @Param()
     categoryUniqueTraitDto: CategoryUniqueTraitDto,
@@ -110,7 +110,7 @@ export class CategoriesController {
     }
   }
 
-  @Delete('/:indicatorIndex/:name')
+  @Delete('/:name/')
   async delete(
     @Param()
     categoryUniqueTraitDto: CategoryUniqueTraitDto,
