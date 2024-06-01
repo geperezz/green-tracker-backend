@@ -26,6 +26,8 @@ import { CriterionCreation } from './schemas/criterion-creation.schema';
 import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
 import { CriterionReplacement } from './schemas/criterion-replacement.schema';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
+import { CriterionIndicatorIndexDto } from './dtos/criterion-indicator-index.dto';
+import { CriterionIndicatorIndex } from './schemas/criterion-indicator-index.schema';
 
 @Controller('/indicators/:indicatorIndex/criteria/')
 @ApiTags('Criteria')
@@ -67,10 +69,13 @@ export class CriteriaController {
   @Get()
   @LoggedInAs('unit')
   async findPage(
+    @Param()
+    criterionIndicatorIndexDto: CriterionIndicatorIndexDto,
     @Query()
     paginationOptionsDto: PaginationOptionsDto,
   ): Promise<CriteriaPageDto> {
     const criterionSchemasPage = await this.criteriaRepository.findPage(
+      CriterionIndicatorIndex.parse(criterionIndicatorIndexDto),
       PaginationOptions.parse(paginationOptionsDto),
     );
 
