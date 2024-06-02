@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { AdminsModule } from './admins/admins.module';
+import { EvidenceModule } from './evidence/evidence.module';
 
 @Module({
   imports: [
@@ -23,6 +24,8 @@ import { AdminsModule } from './admins/admins.module';
     IndicatorsModule,
     CriteriaModule,
     ActivitiesModule,
+    ActivitiesModule,
+    EvidenceModule,
   ],
 })
 export class AppModule {}
