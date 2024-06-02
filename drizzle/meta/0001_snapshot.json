@@ -1,6 +1,6 @@
 {
-  "id": "c9984791-6482-49c4-9e04-393ecaa8ea4c",
-  "prevId": "e85f800c-7258-46f7-9279-18acef09d768",
+  "id": "a89c1538-2679-4f01-b9e9-9bc17e7e3720",
+  "prevId": "b731f1c0-49b6-46ed-a2b0-b24aa5c1d949",
   "version": "6",
   "dialect": "postgresql",
   "tables": {
@@ -49,8 +49,7 @@
           "name": "upload_timestamp",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         }
       },
       "indexes": {},
@@ -81,36 +80,6 @@
             "name"
           ],
           "onDelete": "restrict",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "public.admins": {
-      "name": "admins",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "admins_id_users_id_fk": {
-          "name": "admins_id_users_id_fk",
-          "tableFrom": "admins",
-          "tableTo": "users",
-          "columnsFrom": [
-            "id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
@@ -308,10 +277,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "evidence_feedback_admin_id_admins_id_fk": {
-          "name": "evidence_feedback_admin_id_admins_id_fk",
+        "evidence_feedback_admin_id_users_id_fk": {
+          "name": "evidence_feedback_admin_id_users_id_fk",
           "tableFrom": "evidence_feedback",
-          "tableTo": "admins",
+          "tableTo": "users",
           "columnsFrom": [
             "admin_id"
           ],
