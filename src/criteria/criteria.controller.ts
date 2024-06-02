@@ -26,6 +26,11 @@ import { CriterionCreation } from './schemas/criterion-creation.schema';
 import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
 import { CriterionReplacement } from './schemas/criterion-replacement.schema';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
+import { CriterionIndicatorIndexDto } from './dtos/criterion-indicator-index.dto';
+import { CriterionIndicatorIndex } from './schemas/criterion-indicator-index.schema';
+import { CriterionCreationPathDto } from './dtos/criterion-creation-path.dto';
+import { CriterionCreationBodyDto } from './dtos/criterion-creation-body.dto';
+import { CriterionCreationPath } from './schemas/criterion-creation-path.schema';
 
 @Controller('/indicators/:indicatorIndex/criteria/')
 @ApiTags('Criteria')
@@ -35,11 +40,18 @@ export class CriteriaController {
 
   @Post()
   async create(
+    @Param()
+    creationPathDto: CriterionCreationPathDto,
     @Body()
-    creationDataDto: CriterionCreationDto,
+    creationDataDto: CriterionCreationBodyDto,
   ): Promise<CriterionDto> {
+    const combinedData = {
+      ...creationPathDto,
+      ...creationDataDto,
+    };
+
     const createdCriterionSchema = await this.criteriaRepository.create(
-      CriterionCreation.parse(creationDataDto),
+      CriterionCreation.parse(combinedData),
     );
     return CriterionDto.fromSchema(createdCriterionSchema);
   }
@@ -67,10 +79,13 @@ export class CriteriaController {
   @Get()
   @LoggedInAs('unit')
   async findPage(
+    @Param()
+    criterionIndicatorIndexDto: CriterionIndicatorIndexDto,
     @Query()
     paginationOptionsDto: PaginationOptionsDto,
   ): Promise<CriteriaPageDto> {
     const criterionSchemasPage = await this.criteriaRepository.findPage(
+      CriterionIndicatorIndex.parse(criterionIndicatorIndexDto),
       PaginationOptions.parse(paginationOptionsDto),
     );
 
@@ -91,10 +106,15 @@ export class CriteriaController {
     @Body()
     replacementDataDto: CriterionReplacementDto,
   ): Promise<CriterionDto> {
+    const combinedData = {
+      indicatorIndex: criterionUniqueTraitDto.indicatorIndex,
+      ...replacementDataDto,
+    };
+
     try {
       const newCriterionSchema = await this.criteriaRepository.replace(
         CriterionUniqueTrait.parse(criterionUniqueTraitDto),
-        CriterionReplacement.parse(replacementDataDto),
+        CriterionReplacement.parse(combinedData),
       );
 
       return CriterionDto.fromSchema(newCriterionSchema);
