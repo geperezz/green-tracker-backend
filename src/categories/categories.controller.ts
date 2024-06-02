@@ -28,6 +28,8 @@ import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 import { CategoryReplacement } from './schemas/category-replacement.schema';
 import { CategoryCreationPathDto } from './dtos/category-creation-path.dto';
 import { CategoryCreationBodyDto } from './dtos/category-creation-body.dto';
+import { CategoryIndicatorIndexDto } from './dtos/category-indicator-index.dto';
+import { CategoryIndicatorIndex } from './schemas/category-indicator-index.schema';
 
 @Controller('/indicators/:indicatorIndex/categories/')
 @ApiTags('Categories')
@@ -76,10 +78,13 @@ export class CategoriesController {
   @Get()
   @LoggedInAs('unit')
   async findPage(
+    @Param()
+    categoryIndicatorIndexDto: CategoryIndicatorIndexDto,
     @Query()
     paginationOptionsDto: PaginationOptionsDto,
   ): Promise<CategoriesPageDto> {
     const categorySchemasPage = await this.categoriesRepository.findPage(
+      CategoryIndicatorIndex.parse(categoryIndicatorIndexDto),
       PaginationOptions.parse(paginationOptionsDto),
     );
 

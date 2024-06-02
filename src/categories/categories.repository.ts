@@ -9,6 +9,7 @@ import { Category } from './schemas/category.schema';
 import { CategoriesPage } from './schemas/categories-page.schema';
 import { CategoryReplacement } from './schemas/category-replacement.schema';
 import { CategoryUniqueTrait } from './schemas/category-unique-trait.schema';
+import { CategoryIndicatorIndex } from './schemas/category-indicator-index.schema';
 
 export abstract class CategoriesRepositoryError extends Error {}
 export class CategoryNotFoundError extends CategoriesRepositoryError {}
@@ -64,6 +65,7 @@ export class CategoriesRepository {
   }
 
   async findPage(
+    indicatorIndex: CategoryIndicatorIndex,
     paginationOptions: PaginationOptions,
     transaction?: DrizzleTransaction,
   ): Promise<CategoriesPage> {
@@ -72,6 +74,9 @@ export class CategoriesRepository {
         const categoriesPageQuery = transaction
           .select()
           .from(categoriesTable)
+          .where(
+            eq(categoriesTable.indicatorIndex, indicatorIndex.indicatorIndex),
+          )
           .limit(paginationOptions.itemsPerPage)
           .offset(
             paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
