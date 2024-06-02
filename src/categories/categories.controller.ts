@@ -26,6 +26,8 @@ import { PaginationOptions } from 'src/pagination/schemas/pagination-options.sch
 import { CategoryUniqueTrait } from './schemas/category-unique-trait.schema';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 import { CategoryReplacement } from './schemas/category-replacement.schema';
+import { CategoryCreationPathDto } from './dtos/category-creation-path.dto';
+import { CategoryCreationBodyDto } from './dtos/category-creation-body.dto';
 
 @Controller('/indicators/:indicatorIndex/categories/')
 @ApiTags('Categories')
@@ -35,11 +37,18 @@ export class CategoriesController {
 
   @Post()
   async create(
+    @Param()
+    creationPathDto: CategoryCreationPathDto,
     @Body()
-    creationDataDto: CategoryCreationDto,
+    creationDataDto: CategoryCreationBodyDto,
   ): Promise<CategoryDto> {
+    const combinedData = {
+      ...creationPathDto,
+      ...creationDataDto,
+    };
+
     const createdCategorySchema = await this.categoriesRepository.create(
-      CategoryCreation.parse(creationDataDto),
+      CategoryCreation.parse(combinedData),
     );
     return CategoryDto.fromSchema(createdCategorySchema);
   }
