@@ -9,6 +9,7 @@ import { CriteriaModule } from './criteria/criteria.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ActivitiesModule } from './activities/activities.module';
+import { AdminsModule } from './admins/admins.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ActivitiesModule } from './activities/activities.module';
     ValidationModule,
     AuthModule,
     UsersModule,
+    AdminsModule,
     IndicatorsModule,
     CriteriaModule,
     ActivitiesModule,

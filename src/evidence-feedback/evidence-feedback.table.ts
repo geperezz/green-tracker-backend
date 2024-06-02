@@ -7,8 +7,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-import { adminsTable } from 'src/admins/admins.table';
 import { evidenceTable } from 'src/evidence/evidence.table';
+import { usersTable } from 'src/users/users.table';
 
 export const evidenceFeedbackTable = pgTable(
   'evidence_feedback',
@@ -16,7 +16,7 @@ export const evidenceFeedbackTable = pgTable(
     activityId: uuid('activity_id').notNull(),
     evidenceNumber: serial('evidence_number').notNull(),
     adminId: uuid('admin_id')
-      .references(() => adminsTable.id, {
+      .references(() => usersTable.id, {
         onUpdate: 'cascade',
         onDelete: 'cascade',
       })

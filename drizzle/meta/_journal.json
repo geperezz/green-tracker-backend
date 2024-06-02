@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1716246249138,
-      "tag": "0000_wise_mandarin",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1716654101119,
-      "tag": "0001_narrow_eternity",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1716766504553,
-      "tag": "0002_dizzy_enchantress",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1716930046285,
-      "tag": "0003_light_shinko_yamashiro",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1717023950618,
-      "tag": "0004_familiar_nightcrawler",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1717024484241,
-      "tag": "0005_absurd_azazel",
+      "when": 1717352200121,
+      "tag": "0000_short_william_stryker",
       "breakpoints": true
     },
     {

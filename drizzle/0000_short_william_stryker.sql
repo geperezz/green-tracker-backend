@@ -4,6 +4,12 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
+DO $$ BEGIN
+ CREATE TYPE "public"."user_role" AS ENUM('unit', 'admin', 'superadmin');
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "activities" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"summary" text NOT NULL,
@@ -13,14 +19,22 @@ CREATE TABLE IF NOT EXISTS "activities" (
 	"upload_timestamp" timestamp NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "admins" (
-	"id" uuid PRIMARY KEY NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "categories" (
 	"indicator_index" integer NOT NULL,
 	"name" text NOT NULL,
 	CONSTRAINT "categories_indicator_index_name_pk" PRIMARY KEY("indicator_index","name")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "criteria" (
+	"index" integer,
+	"subindex" integer NOT NULL,
+	"english_name" text NOT NULL,
+	"spanish_alias" text NOT NULL,
+	"category_name" text NOT NULL,
+	CONSTRAINT "criteria_index_subindex_pk" PRIMARY KEY("index","subindex"),
+	CONSTRAINT "criteria_subindex_unique" UNIQUE("subindex"),
+	CONSTRAINT "criteria_english_name_unique" UNIQUE("english_name"),
+	CONSTRAINT "criteria_spanish_alias_unique" UNIQUE("spanish_alias")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "evidence_feedback" (
@@ -48,6 +62,14 @@ CREATE TABLE IF NOT EXISTS "image_evidence" (
 	CONSTRAINT "image_evidence_activity_id_evidence_number_pk" PRIMARY KEY("activity_id","evidence_number")
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "indicators" (
+	"index" integer PRIMARY KEY NOT NULL,
+	"english_name" text NOT NULL,
+	"spanish_alias" text NOT NULL,
+	CONSTRAINT "indicators_english_name_unique" UNIQUE("english_name"),
+	CONSTRAINT "indicators_spanish_alias_unique" UNIQUE("spanish_alias")
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "recommended_categories" (
 	"indicator_index" integer NOT NULL,
 	"category_name" text NOT NULL,
@@ -59,10 +81,21 @@ CREATE TABLE IF NOT EXISTS "units" (
 	"id" uuid PRIMARY KEY NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "criteria" DROP CONSTRAINT "criteria_index_indicators_index_fk";
+CREATE TABLE IF NOT EXISTS "upload_period" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"start_timestamp" timestamp NOT NULL,
+	"end_timestamp" timestamp NOT NULL
+);
 --> statement-breakpoint
-DROP INDEX IF EXISTS "indicators_english_name_idx";--> statement-breakpoint
-DROP INDEX IF EXISTS "indicators_spanish_alias_idx";--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "users" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text NOT NULL,
+	"email" text NOT NULL,
+	"password" text NOT NULL,
+	"role" "user_role" NOT NULL,
+	CONSTRAINT "users_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "activities" ADD CONSTRAINT "activities_unit_id_units_id_fk" FOREIGN KEY ("unit_id") REFERENCES "public"."units"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
@@ -76,19 +109,25 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "admins" ADD CONSTRAINT "admins_id_users_id_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE cascade;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
  ALTER TABLE "categories" ADD CONSTRAINT "categories_indicator_index_indicators_index_fk" FOREIGN KEY ("indicator_index") REFERENCES "public"."indicators"("index") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "evidence_feedback" ADD CONSTRAINT "evidence_feedback_admin_id_admins_id_fk" FOREIGN KEY ("admin_id") REFERENCES "public"."admins"("id") ON DELETE cascade ON UPDATE cascade;
+ ALTER TABLE "criteria" ADD CONSTRAINT "criteria_index_indicators_index_fk" FOREIGN KEY ("index") REFERENCES "public"."indicators"("index") ON DELETE cascade ON UPDATE cascade;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "criteria" ADD CONSTRAINT "criteria_index_category_name_categories_indicator_index_name_fk" FOREIGN KEY ("index","category_name") REFERENCES "public"."categories"("indicator_index","name") ON DELETE restrict ON UPDATE cascade;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "evidence_feedback" ADD CONSTRAINT "evidence_feedback_admin_id_users_id_fk" FOREIGN KEY ("admin_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -125,18 +164,6 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "units" ADD CONSTRAINT "units_id_users_id_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE cascade;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "criteria" ADD CONSTRAINT "criteria_index_category_name_categories_indicator_index_name_fk" FOREIGN KEY ("index","category_name") REFERENCES "public"."categories"("indicator_index","name") ON DELETE restrict ON UPDATE cascade;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "criteria" ADD CONSTRAINT "criteria_index_indicators_index_fk" FOREIGN KEY ("index") REFERENCES "public"."indicators"("index") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

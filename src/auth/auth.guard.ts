@@ -9,11 +9,12 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { z } from 'nestjs-zod/z';
+import { UserUniqueTraitDto } from 'src/users/dtos/user-unique-trait.dto';
 
-import { userDtoSchema } from 'src/users/dtos/user.dto';
+import { UserDto, userDtoSchema } from 'src/users/dtos/user.dto';
 import { UserUniqueTrait } from 'src/users/schemas/user-unique-trait.schema';
 import { User } from 'src/users/schemas/user.schema';
-import { UsersRepository } from 'src/users/users.repository';
+import { UsersService } from 'src/users/users.service';
 
 const tokenPayloadSchema = z.object({
   id: userDtoSchema.shape.id,
@@ -26,7 +27,7 @@ type TokenPayload = z.infer<typeof TokenPayload>;
 export class AuthGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
-    private usersRepository: UsersRepository,
+    private usersService: UsersService,
     private reflector: Reflector,
   ) {}
 
@@ -76,7 +77,9 @@ export class AuthGuard implements CanActivate {
     return token;
   }
 
-  private async extractUserFromPayload(tokenPayload: unknown): Promise<User> {
+  private async extractUserFromPayload(
+    tokenPayload: unknown,
+  ): Promise<UserDto> {
     let parsedTokenPayload!: TokenPayload;
     try {
       parsedTokenPayload = TokenPayload.parse(tokenPayload);
@@ -87,8 +90,8 @@ export class AuthGuard implements CanActivate {
       );
     }
 
-    const user = await this.usersRepository.findOne(
-      UserUniqueTrait.parse(parsedTokenPayload),
+    const user = await this.usersService.findOne(
+      UserUniqueTraitDto.create(parsedTokenPayload),
     );
     if (!user) {
       throw new UnauthorizedException(
