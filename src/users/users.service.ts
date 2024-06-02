@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
-import { DrizzleTransaction } from 'src/drizzle/drizzle.client';
+import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
 import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
 import { UserCreation } from './schemas/user-creation.schema';
 import { UserUniqueTrait } from './schemas/user-unique-trait.schema';
@@ -24,49 +24,65 @@ export class UserNotFoundError extends UsersServiceError {}
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    @Inject('DRIZZLE_CLIENT')
+    private readonly drizzleClient: DrizzleClient,
+    private readonly usersRepository: UsersRepository,
+  ) {}
 
   async create(
     userCreationDto: UserCreationDto,
     transaction?: DrizzleTransaction,
   ): Promise<UserDto> {
-    const user = await this.usersRepository.create(
-      UserCreation.parse({
-        ...userCreationDto,
-        password: await bcrypt.hash(
-          userCreationDto.password,
-          await bcrypt.genSalt(10),
-        ),
-      }),
-      transaction,
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const user = await this.usersRepository.create(
+          UserCreation.parse({
+            ...userCreationDto,
+            password: await bcrypt.hash(
+              userCreationDto.password,
+              await bcrypt.genSalt(10),
+            ),
+          }),
+          transaction,
+        );
+        return UserDto.create(user);
+      },
     );
-    return UserDto.create(user);
   }
 
   async findOne(
     userUniqueTraitDto: UserUniqueTraitDto,
     transaction?: DrizzleTransaction,
   ): Promise<UserDto | null> {
-    const user = await this.usersRepository.findOne(
-      UserUniqueTrait.parse(userUniqueTraitDto),
-      transaction,
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const user = await this.usersRepository.findOne(
+          UserUniqueTrait.parse(userUniqueTraitDto),
+          transaction,
+        );
+        if (!user) {
+          return null;
+        }
+        return UserDto.create(user);
+      },
     );
-    if (!user) {
-      return null;
-    }
-    return UserDto.create(user);
   }
 
   async findAll(
     filters?: UserFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<UserDto[]> {
-    const userSchemas = await this.usersRepository.findAll(
-      filters ? UserFilters.parse(filters) : undefined,
-      transaction,
-    );
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const userSchemas = await this.usersRepository.findAll(
+          filters ? UserFilters.parse(filters) : undefined,
+          transaction,
+        );
 
-    return userSchemas.map((userSchema) => UserDto.create(userSchema));
+        return userSchemas.map((userSchema) => UserDto.create(userSchema));
+      },
+    );
   }
 
   async findPage(
@@ -74,20 +90,24 @@ export class UsersService {
     filters?: UserFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<UsersPageDto> {
-    const userSchemasPage = await this.usersRepository.findPage(
-      PaginationOptions.parse(paginationOptionsDto),
-      filters ? UserFilters.parse(filters) : undefined,
-      transaction,
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const userSchemasPage = await this.usersRepository.findPage(
+          PaginationOptions.parse(paginationOptionsDto),
+          filters ? UserFilters.parse(filters) : undefined,
+          transaction,
+        );
+
+        const userDtosPage = {
+          ...userSchemasPage,
+          items: userSchemasPage.items.map((userSchema) =>
+            UserDto.create(userSchema),
+          ),
+        };
+
+        return userDtosPage;
+      },
     );
-
-    const userDtosPage = {
-      ...userSchemasPage,
-      items: userSchemasPage.items.map((userSchema) =>
-        UserDto.create(userSchema),
-      ),
-    };
-
-    return userDtosPage;
   }
 
   async replace(
@@ -95,36 +115,52 @@ export class UsersService {
     userReplacementDto: UserReplacementDto,
     transaction?: DrizzleTransaction,
   ): Promise<UserDto> {
-    try {
-      const newUser = await this.usersRepository.replace(
-        UserUniqueTrait.parse(userUniqueTraitDto),
-        UserReplacement.parse(userReplacementDto),
-        transaction,
-      );
-      return UserDto.create(newUser);
-    } catch (error) {
-      if (error instanceof UserNotFoundRepositoryError) {
-        throw new UserNotFoundError();
-      }
-      throw error;
-    }
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        try {
+          const newUser = await this.usersRepository.replace(
+            UserUniqueTrait.parse(userUniqueTraitDto),
+            UserReplacement.parse({
+              ...userReplacementDto,
+              password: userReplacementDto.password
+                ? await bcrypt.hash(
+                    userReplacementDto.password,
+                    await bcrypt.genSalt(10),
+                  )
+                : undefined,
+            }),
+            transaction,
+          );
+          return UserDto.create(newUser);
+        } catch (error) {
+          if (error instanceof UserNotFoundRepositoryError) {
+            throw new UserNotFoundError();
+          }
+          throw error;
+        }
+      },
+    );
   }
 
   async delete(
     userUniqueTraitDto: UserUniqueTraitDto,
     transaction?: DrizzleTransaction,
   ): Promise<UserDto> {
-    try {
-      const user = await this.usersRepository.delete(
-        UserUniqueTrait.parse(userUniqueTraitDto),
-        transaction,
-      );
-      return UserDto.create(user);
-    } catch (error) {
-      if (error instanceof UserNotFoundRepositoryError) {
-        throw new UserNotFoundError();
-      }
-      throw error;
-    }
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        try {
+          const user = await this.usersRepository.delete(
+            UserUniqueTrait.parse(userUniqueTraitDto),
+            transaction,
+          );
+          return UserDto.create(user);
+        } catch (error) {
+          if (error instanceof UserNotFoundRepositoryError) {
+            throw new UserNotFoundError();
+          }
+          throw error;
+        }
+      },
+    );
   }
 }
