@@ -8,6 +8,7 @@ import { SuccessfulResponseBuilderModule } from './successful-response-builder/s
 import { CriteriaModule } from './criteria/criteria.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { AdminsModule } from './admins/admins.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from './auth/auth.module';
     ValidationModule,
     AuthModule,
     UsersModule,
+    AdminsModule,
     IndicatorsModule,
     CriteriaModule,
   ],
