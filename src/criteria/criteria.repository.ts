@@ -9,6 +9,8 @@ import { Criterion } from './schemas/criterion.schema';
 import { CriteriaPage } from './schemas/criteria-page.schema';
 import { CriterionReplacement } from './schemas/criterion-replacement.schema';
 import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
+import { CriterionIndicatorIndex } from './schemas/criterion-indicator-index.schema';
+import { CriterionCreationPath } from './schemas/criterion-creation-path.schema';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -64,6 +66,7 @@ export class CriteriaRepository {
   }
 
   async findPage(
+    indicatorIndex: CriterionIndicatorIndex,
     paginationOptions: PaginationOptions,
     transaction?: DrizzleTransaction,
   ): Promise<CriteriaPage> {
@@ -72,6 +75,12 @@ export class CriteriaRepository {
         const criteriaPageQuery = transaction
           .select()
           .from(criteriaTable)
+          .where(
+            eq(
+              criteriaTable.indicatorIndex,
+              indicatorIndex.indicatorIndex,
+            ),
+          )
           .limit(paginationOptions.itemsPerPage)
           .offset(
             paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
