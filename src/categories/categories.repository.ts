@@ -71,30 +71,30 @@ export class CategoriesRepository {
   ): Promise<CategoriesPage> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const categoriesPageQuery = transaction
+        const filteredCategoriesQuery = transaction
           .select()
           .from(categoriesTable)
           .where(
             eq(categoriesTable.indicatorIndex, indicatorIndex.indicatorIndex),
           )
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
-          )
-          .as('categories_page');
+          .as('filtered_categories');
 
         const nonValidatedCategoriesPage = await transaction
           .select()
-          .from(categoriesPageQuery);
+          .from(filteredCategoriesQuery)
+          .limit(paginationOptions.itemsPerPage)
+          .offset(
+            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+          );
         const categoriesPage = nonValidatedCategoriesPage.map((category) =>
           Category.parse(category),
         );
 
         const [{ categoriesCount }] = await transaction
           .select({
-            categoriesCount: count(categoriesPageQuery.indicatorIndex),
+            categoriesCount: count(filteredCategoriesQuery.indicatorIndex),
           })
-          .from(categoriesPageQuery);
+          .from(filteredCategoriesQuery);
 
         return CategoriesPage.parse({
           items: categoriesPage,
