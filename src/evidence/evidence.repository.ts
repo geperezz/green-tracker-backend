@@ -64,6 +64,24 @@ export class EvidenceRepository {
     );
   }
 
+  async findAll(
+    filters?: EvidenceFilters,
+    transaction?: DrizzleTransaction,
+  ): Promise<Evidence[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const nonValidatedEvidence = await transaction
+          .select()
+          .from(evidenceTable)
+          .where(this.transformFiltersToWhereConditions(filters));
+
+        return await Promise.all(
+          nonValidatedEvidence.map((evidence) => Evidence.parse(evidence)),
+        );
+      },
+    );
+  }
+
   async findPage(
     paginationOptions: PaginationOptions,
     filters?: EvidenceFilters,

@@ -156,6 +156,35 @@ export class EvidenceService {
     );
   }
 
+  async findAll(
+    activityUniqueTraitDto: ActivityUniqueTraitDto,
+    transaction?: DrizzleTransaction,
+  ) {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const evidence = await this.evidenceRepository.findAll(
+          EvidenceFilters.parse({
+            activityId: activityUniqueTraitDto.activityId,
+          }),
+          transaction,
+        );
+
+        return await Promise.all(
+          evidence.map(async (evidence) => {
+            if (evidence.type === 'image') {
+              const imageEvidence = await this.imageEvidenceRepository.findOne(
+                ImageEvidenceUniqueTrait.parse(evidence),
+                transaction,
+              );
+              return EvidenceDto.parse({ ...evidence, ...imageEvidence });
+            }
+            return EvidenceDto.parse(evidence);
+          }),
+        );
+      },
+    );
+  }
+
   async replace(
     evidenceUniqueTraitDto: EvidenceUniqueTraitDto,
     evidenceReplacementDto: EvidenceReplacementDto,
