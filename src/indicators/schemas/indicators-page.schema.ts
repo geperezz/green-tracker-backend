@@ -6,4 +6,4 @@ import { Indicator } from './indicator.schema';
 export const indicatorsPageSchema = buildPageSchema(Indicator);
 
 export const IndicatorsPage = indicatorsPageSchema.brand('IndicatorsPage');
-export type IndicatorsPage = z.infer<typeof indicatorsPageSchema>;
+export type IndicatorsPage = z.infer<typeof IndicatorsPage>;

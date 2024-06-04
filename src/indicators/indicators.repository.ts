@@ -61,27 +61,27 @@ export class IndicatorsRepository {
   ): Promise<IndicatorsPage> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const indicatorsPageQuery = transaction
+        const indicatorsQuery = transaction
           .select()
           .from(indicatorsTable)
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
-          )
-          .as('indicators_page');
+          .as('indicators');
 
         const nonValidatedIndicatorsPage = await transaction
           .select()
-          .from(indicatorsPageQuery);
+          .from(indicatorsQuery)
+          .limit(paginationOptions.itemsPerPage)
+          .offset(
+            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+          );
         const indicatorsPage = nonValidatedIndicatorsPage.map((indicator) =>
           Indicator.parse(indicator),
         );
 
         const [{ indicatorsCount }] = await transaction
           .select({
-            indicatorsCount: count(indicatorsPageQuery.index),
+            indicatorsCount: count(indicatorsQuery.index),
           })
-          .from(indicatorsPageQuery);
+          .from(indicatorsQuery);
 
         return IndicatorsPage.parse({
           items: indicatorsPage,

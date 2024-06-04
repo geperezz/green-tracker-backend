@@ -9,6 +9,8 @@ import { Criterion } from './schemas/criterion.schema';
 import { CriteriaPage } from './schemas/criteria-page.schema';
 import { CriterionReplacement } from './schemas/criterion-replacement.schema';
 import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
+import { CriterionIndicatorIndex } from './schemas/criterion-indicator-index.schema';
+import { CriterionCreationPath } from './schemas/criterion-creation-path.schema';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -64,23 +66,27 @@ export class CriteriaRepository {
   }
 
   async findPage(
+    indicatorIndex: CriterionIndicatorIndex,
     paginationOptions: PaginationOptions,
     transaction?: DrizzleTransaction,
   ): Promise<CriteriaPage> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const criteriaPageQuery = transaction
+        const filteredCriteriaQuery = transaction
           .select()
           .from(criteriaTable)
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+          .where(
+            eq(criteriaTable.indicatorIndex, indicatorIndex.indicatorIndex),
           )
-          .as('criteria_page');
+          .as('filtered_criteria');
 
         const nonValidatedCriteriaPage = await transaction
           .select()
-          .from(criteriaPageQuery);
+          .from(filteredCriteriaQuery)
+          .limit(paginationOptions.itemsPerPage)
+          .offset(
+            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+          );
         const criteriaPage = nonValidatedCriteriaPage.map((criterion) =>
           Criterion.parse(criterion),
         );
@@ -89,7 +95,7 @@ export class CriteriaRepository {
           .select({
             criteriaCount: count(),
           })
-          .from(criteriaPageQuery);
+          .from(filteredCriteriaQuery);
 
         return CriteriaPage.parse({
           items: criteriaPage,
