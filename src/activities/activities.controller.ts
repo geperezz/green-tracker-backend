@@ -11,37 +11,29 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import {
-  ActivityNotFoundError,
-  ActivitiesRepository,
-} from './activities.repository';
 import { ActivityCreationDto } from './dtos/activity-creation.dto';
 import { ActivityDto } from './dtos/activity.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
 import { ActivitiesPageDto } from './dtos/activities-page.dto';
 import { ActivityReplacementDto } from './dtos/activity-replacement.dto';
 import { ActivityUniqueTraitDto } from './dtos/activity-unique-trait.dto';
-import { ActivityCreation } from './schemas/activity-creation.schema';
-import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
 import { ActivityUniqueTrait } from './schemas/activity-unique-trait.schema';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
-import { ActivityReplacement } from './schemas/activity-replacement.schema';
+import { ActivitiesService, ActivityNotFoundError } from './activities.service';
+import { ActivityFiltersDto } from './dtos/activity-filters.dto';
 
 @Controller('/activities/')
 @ApiTags('Activities')
 @LoggedInAs('superadmin', 'admin')
 export class ActivitiesController {
-  constructor(private readonly activitiesRepository: ActivitiesRepository) {}
+  constructor(private readonly activitiesService: ActivitiesService) {}
 
   @Post()
   async create(
     @Body()
     creationDataDto: ActivityCreationDto,
   ): Promise<ActivityDto> {
-    const createdActivitySchema = await this.activitiesRepository.create(
-      ActivityCreation.parse(creationDataDto),
-    );
-    return ActivityDto.fromSchema(createdActivitySchema);
+    return await this.activitiesService.create(creationDataDto);
   }
 
   @Get('/:id/')
@@ -50,19 +42,19 @@ export class ActivitiesController {
     @Param()
     activityUniqueTraitDto: ActivityUniqueTraitDto,
   ): Promise<ActivityDto> {
-    console.log(activityUniqueTraitDto)
-    const activitySchema = await this.activitiesRepository.findOne(
-      ActivityUniqueTrait.parse(activityUniqueTraitDto),
+    console.log(activityUniqueTraitDto);
+    const activity = await this.activitiesService.findOne(
+      activityUniqueTraitDto,
     );
 
-    if (!activitySchema) {
+    if (!activity) {
       throw new NotFoundException(
         'Activity not found',
         `There is no activity with id ${activityUniqueTraitDto.id}`,
       );
     }
 
-    return ActivityDto.fromSchema(activitySchema);
+    return activity;
   }
 
   @Get()
@@ -70,19 +62,13 @@ export class ActivitiesController {
   async findPage(
     @Query()
     paginationOptionsDto: PaginationOptionsDto,
+    @Query()
+    filtersDto: ActivityFiltersDto,
   ): Promise<ActivitiesPageDto> {
-    const activitySchemasPage = await this.activitiesRepository.findPage(
-      PaginationOptions.parse(paginationOptionsDto),
+    return await this.activitiesService.findPage(
+      paginationOptionsDto,
+      filtersDto,
     );
-
-    const activityDtosPage = {
-      ...activitySchemasPage,
-      items: activitySchemasPage.items.map((activitySchema) =>
-        ActivityDto.fromSchema(activitySchema),
-      ),
-    };
-
-    return activityDtosPage;
   }
 
   @Put('/:id/')
@@ -93,12 +79,10 @@ export class ActivitiesController {
     replacementDataDto: ActivityReplacementDto,
   ): Promise<ActivityDto> {
     try {
-      const newActivitySchema = await this.activitiesRepository.replace(
-        ActivityUniqueTrait.parse(activityUniqueTraitDto),
-        ActivityReplacement.parse(replacementDataDto),
+      return await this.activitiesService.replace(
+        activityUniqueTraitDto,
+        replacementDataDto,
       );
-
-      return ActivityDto.fromSchema(newActivitySchema);
     } catch (error) {
       if (error instanceof ActivityNotFoundError) {
         throw new NotFoundException('Activity not found', {
@@ -117,11 +101,11 @@ export class ActivitiesController {
     activityUniqueTraitDto: ActivityUniqueTraitDto,
   ): Promise<ActivityDto> {
     try {
-      const deletedActivitySchema = await this.activitiesRepository.delete(
+      const deletedActivitySchema = await this.activitiesService.delete(
         ActivityUniqueTrait.parse(activityUniqueTraitDto),
       );
 
-      return ActivityDto.fromSchema(deletedActivitySchema);
+      return ActivityDto.create(deletedActivitySchema);
     } catch (error) {
       if (error instanceof ActivityNotFoundError) {
         throw new NotFoundException('Activity not found', {

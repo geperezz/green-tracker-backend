@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
 
-import { ActivitiesRepository } from './activities.repository';
 import { ActivitiesController } from './activities.controller';
+import { ActivitiesService } from './activities.service';
+import { ActivitiesRepository } from './activities.repository';
+import { EvidenceModule } from 'src/evidence/evidence.module';
 
 @Module({
-  providers: [ActivitiesRepository],
-  exports: [ActivitiesRepository],
+  imports: [EvidenceModule],
   controllers: [ActivitiesController],
+  providers: [ActivitiesService, ActivitiesRepository],
+  exports: [ActivitiesRepository],
 })
 export class ActivitiesModule {}

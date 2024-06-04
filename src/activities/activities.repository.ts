@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { count, eq } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
 import { activitiesTable } from './activities.table';
@@ -9,6 +9,7 @@ import { Activity } from './schemas/activity.schema';
 import { ActivitiesPage } from './schemas/activities-page.schema';
 import { ActivityReplacement } from './schemas/activity-replacement.schema';
 import { ActivityUniqueTrait } from './schemas/activity-unique-trait.schema';
+import { ActivityFilters } from './schemas/activity-filters.schema';
 
 export abstract class ActivitiesRepositoryError extends Error {}
 export class ActivityNotFoundError extends ActivitiesRepositoryError {}
@@ -40,7 +41,7 @@ export class ActivitiesRepository {
     activityUniqueTrait: ActivityUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Activity | null> {
-    console.log(activityUniqueTrait)
+    console.log(activityUniqueTrait);
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
         const [foundActivity = null] = await transaction
@@ -58,31 +59,33 @@ export class ActivitiesRepository {
 
   async findPage(
     paginationOptions: PaginationOptions,
+    filters?: ActivityFilters,
     transaction?: DrizzleTransaction,
   ): Promise<ActivitiesPage> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const activitiesPageQuery = transaction
+        const filteredActivitiesQuery = transaction
           .select()
           .from(activitiesTable)
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
-          )
-          .as('activities_page');
+          .where(this.transformFiltersToWhereConditions(filters))
+          .as('filtered_activities');
 
         const nonValidatedActivitiesPage = await transaction
           .select()
-          .from(activitiesPageQuery);
+          .from(filteredActivitiesQuery)
+          .limit(paginationOptions.itemsPerPage)
+          .offset(
+            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+          );
         const activitiesPage = nonValidatedActivitiesPage.map((activity) =>
           Activity.parse(activity),
         );
 
         const [{ activitiesCount }] = await transaction
           .select({
-            activitiesCount: count(activitiesPageQuery.id),
+            activitiesCount: count(filteredActivitiesQuery.id),
           })
-          .from(activitiesPageQuery);
+          .from(filteredActivitiesQuery);
 
         return ActivitiesPage.parse({
           items: activitiesPage,
@@ -93,6 +96,26 @@ export class ActivitiesRepository {
           itemCount: activitiesCount,
         });
       },
+    );
+  }
+
+  private transformFiltersToWhereConditions(filters?: ActivityFilters) {
+    return and(
+      filters?.id ? eq(activitiesTable.id, filters.id) : undefined,
+      filters?.name ? eq(activitiesTable.name, filters.name) : undefined,
+      filters?.summary
+        ? eq(activitiesTable.summary, filters.summary)
+        : undefined,
+      filters?.uploadTimestamp
+        ? eq(activitiesTable.uploadTimestamp, filters.uploadTimestamp)
+        : undefined,
+      filters?.unitId ? eq(activitiesTable.unitId, filters.unitId) : undefined,
+      filters?.indicatorIndex
+        ? eq(activitiesTable.indicatorIndex, filters.indicatorIndex)
+        : undefined,
+      filters?.categoryName
+        ? eq(activitiesTable.categoryName, filters.categoryName)
+        : undefined,
     );
   }
 
