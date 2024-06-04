@@ -72,27 +72,27 @@ export class ImageEvidenceRepository {
   ): Promise<ImageEvidencePage> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const imageEvidencePageQuery = transaction
+        const filteredImageEvidenceQuery = transaction
           .select()
           .from(imageEvidenceTable)
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
-          )
-          .as('evidence_page');
+          .as('filtered_image_evidence');
 
         const nonValidatedEvidencePage = await transaction
           .select()
-          .from(imageEvidencePageQuery);
+          .from(filteredImageEvidenceQuery)
+          .limit(paginationOptions.itemsPerPage)
+          .offset(
+            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+          );
         const imageEvidencePage = nonValidatedEvidencePage.map((evidence) =>
           ImageEvidence.parse(evidence),
         );
 
         const [{ evidenceCount: imageEvidenceCount }] = await transaction
           .select({
-            evidenceCount: count(imageEvidencePageQuery.evidenceNumber),
+            evidenceCount: count(filteredImageEvidenceQuery.evidenceNumber),
           })
-          .from(imageEvidencePageQuery);
+          .from(filteredImageEvidenceQuery);
 
         return ImageEvidencePage.parse({
           items: imageEvidencePage,

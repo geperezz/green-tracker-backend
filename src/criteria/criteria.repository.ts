@@ -72,24 +72,21 @@ export class CriteriaRepository {
   ): Promise<CriteriaPage> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const criteriaPageQuery = transaction
+        const filteredCriteriaQuery = transaction
           .select()
           .from(criteriaTable)
           .where(
-            eq(
-              criteriaTable.indicatorIndex,
-              indicatorIndex.indicatorIndex,
-            ),
+            eq(criteriaTable.indicatorIndex, indicatorIndex.indicatorIndex),
           )
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
-          )
-          .as('criteria_page');
+          .as('filtered_criteria');
 
         const nonValidatedCriteriaPage = await transaction
           .select()
-          .from(criteriaPageQuery);
+          .from(filteredCriteriaQuery)
+          .limit(paginationOptions.itemsPerPage)
+          .offset(
+            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+          );
         const criteriaPage = nonValidatedCriteriaPage.map((criterion) =>
           Criterion.parse(criterion),
         );
@@ -98,7 +95,7 @@ export class CriteriaRepository {
           .select({
             criteriaCount: count(),
           })
-          .from(criteriaPageQuery);
+          .from(filteredCriteriaQuery);
 
         return CriteriaPage.parse({
           items: criteriaPage,

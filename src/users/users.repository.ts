@@ -79,26 +79,26 @@ export class UsersRepository {
   ): Promise<UsersPage> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const usersPageQuery = transaction
+        const filteredUsersQuery = transaction
           .select()
           .from(usersTable)
           .where(this.transformFiltersToWhereConditions(filters))
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
-          )
-          .as('users_page');
+          .as('filtered_users');
 
         const nonValidatedUsersPage = await transaction
           .select()
-          .from(usersPageQuery);
+          .from(filteredUsersQuery)
+          .limit(paginationOptions.itemsPerPage)
+          .offset(
+            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+          );
         const usersPage = nonValidatedUsersPage.map((user) => User.parse(user));
 
         const [{ usersCount }] = await transaction
           .select({
-            usersCount: count(usersPageQuery.id),
+            usersCount: count(filteredUsersQuery.id),
           })
-          .from(usersPageQuery);
+          .from(filteredUsersQuery);
 
         return UsersPage.parse({
           items: usersPage,

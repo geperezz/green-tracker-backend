@@ -71,28 +71,28 @@ export class EvidenceRepository {
   ): Promise<EvidencePage> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const evidencePageQuery = transaction
+        const filteredEvidenceQuery = transaction
           .select()
           .from(evidenceTable)
           .where(this.transformFiltersToWhereConditions(filters))
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
-          )
-          .as('evidence_page');
+          .as('filtered_evidence');
 
         const nonValidatedEvidencePage = await transaction
           .select()
-          .from(evidencePageQuery);
+          .from(filteredEvidenceQuery)
+          .limit(paginationOptions.itemsPerPage)
+          .offset(
+            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+          );
         const evidencePage = nonValidatedEvidencePage.map((evidence) =>
           Evidence.parse(evidence),
         );
 
         const [{ evidenceCount }] = await transaction
           .select({
-            evidenceCount: count(evidencePageQuery.evidenceNumber),
+            evidenceCount: count(filteredEvidenceQuery.evidenceNumber),
           })
-          .from(evidencePageQuery);
+          .from(filteredEvidenceQuery);
 
         return EvidencePage.parse({
           items: evidencePage,
