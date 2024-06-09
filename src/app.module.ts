@@ -12,6 +12,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { AdminsModule } from './admins/admins.module';
 import { EvidenceModule } from './evidence/evidence.module';
+import { UnitsModule } from './units/units.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EvidenceModule } from './evidence/evidence.module';
     AuthModule,
     UsersModule,
     AdminsModule,
+    UnitsModule,
     IndicatorsModule,
     CriteriaModule,
     CategoriesModule,

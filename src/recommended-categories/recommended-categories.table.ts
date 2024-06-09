@@ -8,7 +8,7 @@ import {
 } from 'drizzle-orm/pg-core';
 
 import { categoriesTable } from 'src/categories/categories.table';
-import { unitsTable } from 'src/units/units.table';
+import { usersTable } from 'src/users/users.table';
 
 export const recommendedCategoriesTable = pgTable(
   'recommended_categories',
@@ -16,7 +16,7 @@ export const recommendedCategoriesTable = pgTable(
     indicatorIndex: integer('indicator_index').notNull(),
     categoryName: text('category_name').notNull(),
     unitId: uuid('unit_id')
-      .references(() => unitsTable.id, {
+      .references(() => usersTable.id, {
         onUpdate: 'cascade',
         onDelete: 'cascade',
       })
