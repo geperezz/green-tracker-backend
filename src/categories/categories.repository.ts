@@ -10,6 +10,7 @@ import { CategoriesPage } from './schemas/categories-page.schema';
 import { CategoryReplacement } from './schemas/category-replacement.schema';
 import { CategoryUniqueTrait } from './schemas/category-unique-trait.schema';
 import { CategoryIndicatorIndex } from './schemas/category-indicator-index.schema';
+import { CategoryFilters } from './schemas/category-filters.schema';
 
 export abstract class CategoriesRepositoryError extends Error {}
 export class CategoryNotFoundError extends CategoriesRepositoryError {}
@@ -65,8 +66,8 @@ export class CategoriesRepository {
   }
 
   async findPage(
-    indicatorIndex: CategoryIndicatorIndex,
     paginationOptions: PaginationOptions,
+    filters?: CategoryFilters,
     transaction?: DrizzleTransaction,
   ): Promise<CategoriesPage> {
     return await (transaction ?? this.drizzleClient).transaction(
@@ -74,9 +75,7 @@ export class CategoriesRepository {
         const filteredCategoriesQuery = transaction
           .select()
           .from(categoriesTable)
-          .where(
-            eq(categoriesTable.indicatorIndex, indicatorIndex.indicatorIndex),
-          )
+          .where(this.transformFiltersToWhereConditions(filters))
           .as('filtered_categories');
 
         const nonValidatedCategoriesPage = await transaction
@@ -105,6 +104,15 @@ export class CategoriesRepository {
           itemCount: categoriesCount,
         });
       },
+    );
+  }
+
+  private transformFiltersToWhereConditions(filters?: CategoryFilters) {
+    return and(
+      filters?.name ? eq(categoriesTable.name, filters.name) : undefined,
+      filters?.indicatorIndex
+        ? eq(categoriesTable.indicatorIndex, filters.indicatorIndex)
+        : undefined,
     );
   }
 

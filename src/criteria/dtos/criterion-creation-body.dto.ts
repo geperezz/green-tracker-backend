@@ -1,8 +1,8 @@
 import { createZodDto } from 'nestjs-zod';
 
-import { criterionDtoSchema } from './criterion.dto';
+import { criterionCreationDtoSchema } from './criterion-creation.dto';
 
-export const criterionCreationBodyDtoSchema = criterionDtoSchema.omit({
+export const criterionCreationBodyDtoSchema = criterionCreationDtoSchema.omit({
   indicatorIndex: true,
 });
 

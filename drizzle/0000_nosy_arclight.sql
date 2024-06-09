@@ -12,6 +12,7 @@ END $$;
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "activities" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text NOT NULL,
 	"summary" text NOT NULL,
 	"indicator_index" integer NOT NULL,
 	"category_name" text NOT NULL,
@@ -30,7 +31,7 @@ CREATE TABLE IF NOT EXISTS "criteria" (
 	"subindex" integer NOT NULL,
 	"english_name" text NOT NULL,
 	"spanish_alias" text NOT NULL,
-	"category_name" text NOT NULL,
+	"category_name" text,
 	CONSTRAINT "criteria_index_subindex_pk" PRIMARY KEY("index","subindex"),
 	CONSTRAINT "criteria_subindex_unique" UNIQUE("subindex"),
 	CONSTRAINT "criteria_english_name_unique" UNIQUE("english_name"),

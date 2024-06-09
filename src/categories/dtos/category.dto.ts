@@ -1,11 +1,11 @@
 import { createZodDto } from 'nestjs-zod';
+import { z } from 'nestjs-zod/z';
 
-import { Category, categorySchema } from '../schemas/category.schema';
+import { categorySchema } from '../schemas/category.schema';
+import { criterionDtoSchema } from 'src/criteria/dtos/criterion.dto';
 
-export const categoryDtoSchema = categorySchema;
+export const categoryDtoSchema = categorySchema.extend({
+  criteria: z.array(criterionDtoSchema).optional(),
+});
 
-export class CategoryDto extends createZodDto(categoryDtoSchema) {
-  static fromSchema(schema: Category): CategoryDto {
-    return categoryDtoSchema.parse(schema);
-  }
-}
+export class CategoryDto extends createZodDto(categoryDtoSchema) {}

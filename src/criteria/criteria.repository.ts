@@ -11,6 +11,7 @@ import { CriterionReplacement } from './schemas/criterion-replacement.schema';
 import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
 import { CriterionIndicatorIndex } from './schemas/criterion-indicator-index.schema';
 import { CriterionCreationPath } from './schemas/criterion-creation-path.schema';
+import { CriteriaFilters } from './schemas/criteria-filters.schema';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -62,6 +63,30 @@ export class CriteriaRepository {
         }
         return Criterion.parse(foundCriterion);
       },
+    );
+  }
+
+  async findAll(
+    filters?: CriteriaFilters,
+    transaction?: DrizzleTransaction,
+  ): Promise<Criterion[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const nonValidatedEvidence = await transaction
+          .select()
+          .from(criteriaTable)
+          .where(this.transformFiltersToWhereConditions(filters));
+
+        return await Promise.all(
+          nonValidatedEvidence.map((evidence) => Criterion.parse(evidence)),
+        );
+      },
+    );
+  }
+
+  private transformFiltersToWhereConditions(filters?: CriteriaFilters) {
+    return and(
+      filters?.categoryName ? eq(criteriaTable.categoryName, filters.categoryName) : undefined,
     );
   }
 

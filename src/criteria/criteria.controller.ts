@@ -15,7 +15,6 @@ import {
   CriterionNotFoundError,
   CriteriaRepository,
 } from './criteria.repository';
-import { CriterionCreationDto } from './dtos/criterion-creation.dto';
 import { CriterionDto } from './dtos/criterion.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
 import { CriteriaPageDto } from './dtos/criteria-page.dto';
@@ -49,7 +48,7 @@ export class CriteriaController {
       ...creationPathDto,
       ...creationDataDto,
     };
-
+    
     const createdCriterionSchema = await this.criteriaRepository.create(
       CriterionCreation.parse(combinedData),
     );
