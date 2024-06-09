@@ -12,6 +12,7 @@ END $$;
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "activities" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text NOT NULL,
 	"summary" text NOT NULL,
 	"indicator_index" integer NOT NULL,
 	"category_name" text NOT NULL,
@@ -77,10 +78,6 @@ CREATE TABLE IF NOT EXISTS "recommended_categories" (
 	CONSTRAINT "recommended_categories_indicator_index_category_name_unit_id_pk" PRIMARY KEY("indicator_index","category_name","unit_id")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "units" (
-	"id" uuid PRIMARY KEY NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "upload_period" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"start_timestamp" timestamp NOT NULL,
@@ -97,7 +94,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 );
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "activities" ADD CONSTRAINT "activities_unit_id_units_id_fk" FOREIGN KEY ("unit_id") REFERENCES "public"."units"("id") ON DELETE cascade ON UPDATE cascade;
+ ALTER TABLE "activities" ADD CONSTRAINT "activities_unit_id_users_id_fk" FOREIGN KEY ("unit_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -151,19 +148,13 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "recommended_categories" ADD CONSTRAINT "recommended_categories_unit_id_units_id_fk" FOREIGN KEY ("unit_id") REFERENCES "public"."units"("id") ON DELETE cascade ON UPDATE cascade;
+ ALTER TABLE "recommended_categories" ADD CONSTRAINT "recommended_categories_unit_id_users_id_fk" FOREIGN KEY ("unit_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "recommended_categories" ADD CONSTRAINT "recommended_categories_indicator_index_category_name_categories_indicator_index_name_fk" FOREIGN KEY ("indicator_index","category_name") REFERENCES "public"."categories"("indicator_index","name") ON DELETE cascade ON UPDATE cascade;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "units" ADD CONSTRAINT "units_id_users_id_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
