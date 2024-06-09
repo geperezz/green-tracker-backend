@@ -30,12 +30,16 @@ import { CategoryCreationPathDto } from './dtos/category-creation-path.dto';
 import { CategoryCreationBodyDto } from './dtos/category-creation-body.dto';
 import { CategoryIndicatorIndexDto } from './dtos/category-indicator-index.dto';
 import { CategoryIndicatorIndex } from './schemas/category-indicator-index.schema';
+import { CategoriesService } from './categories.service';
 
 @Controller('/indicators/:indicatorIndex/categories/')
 @ApiTags('Categories')
 @LoggedInAs('superadmin', 'admin')
 export class CategoriesController {
-  constructor(private readonly categoriesRepository: CategoriesRepository) {}
+  constructor(
+    private readonly categoriesRepository: CategoriesRepository,
+    private readonly categoriesService: CategoriesService,
+  ) {}
 
   @Post()
   async create(
@@ -52,7 +56,7 @@ export class CategoriesController {
     const createdCategorySchema = await this.categoriesRepository.create(
       CategoryCreation.parse(combinedData),
     );
-    return CategoryDto.fromSchema(createdCategorySchema);
+    return createdCategorySchema;
   }
 
   @Get('/:name/')
@@ -61,18 +65,18 @@ export class CategoriesController {
     @Param()
     categoryUniqueTraitDto: CategoryUniqueTraitDto,
   ): Promise<CategoryDto> {
-    const categorySchema = await this.categoriesRepository.findOne(
+    const category = await this.categoriesService.findOne(
       CategoryUniqueTrait.parse(categoryUniqueTraitDto),
     );
 
-    if (!categorySchema) {
+    if (!category) {
       throw new NotFoundException(
         'Category not found',
         `There is no category with indicator ${categoryUniqueTraitDto.indicatorIndex} and name ${categoryUniqueTraitDto.name}`,
       );
     }
 
-    return CategoryDto.fromSchema(categorySchema);
+    return category;
   }
 
   @Get()
@@ -83,19 +87,12 @@ export class CategoriesController {
     @Query()
     paginationOptionsDto: PaginationOptionsDto,
   ): Promise<CategoriesPageDto> {
-    const categorySchemasPage = await this.categoriesRepository.findPage(
-      CategoryIndicatorIndex.parse(categoryIndicatorIndexDto),
+    const categoriesPage = await this.categoriesService.findPage(
       PaginationOptions.parse(paginationOptionsDto),
+      CategoryIndicatorIndex.parse(categoryIndicatorIndexDto),
     );
 
-    const categoryDtosPage = {
-      ...categorySchemasPage,
-      items: categorySchemasPage.items.map((categorySchema) =>
-        CategoryDto.fromSchema(categorySchema),
-      ),
-    };
-
-    return categoryDtosPage;
+    return categoriesPage;
   }
 
   @Put('/:name/')
@@ -111,7 +108,7 @@ export class CategoriesController {
         CategoryReplacement.parse(replacementDataDto),
       );
 
-      return CategoryDto.fromSchema(newCategorySchema);
+      return newCategorySchema;
     } catch (error) {
       if (error instanceof CategoryNotFoundError) {
         throw new NotFoundException('Category not found', {
@@ -134,7 +131,7 @@ export class CategoriesController {
         CategoryUniqueTrait.parse(categoryUniqueTraitDto),
       );
 
-      return CategoryDto.fromSchema(deletedCategorySchema);
+      return deletedCategorySchema;
     } catch (error) {
       if (error instanceof CategoryNotFoundError) {
         throw new NotFoundException('Category not found', {

@@ -20,7 +20,7 @@ export const criteriaTable = pgTable(
     subindex: integer('subindex').notNull().unique(),
     englishName: text('english_name').notNull().unique(),
     spanishAlias: text('spanish_alias').notNull().unique(),
-    categoryName: text('category_name').notNull(),
+    categoryName: text('category_name'),
   },
   (criteriaTable) => {
     return {
