@@ -112,4 +112,18 @@ export class CategoriesService {
       },
     );
   }
+
+  async deleteMany(
+    filters?: CategoryFiltersDto,
+    transaction?: DrizzleTransaction,
+  ): Promise<CategoryDto[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        return await this.categoriesRepository.deleteMany(
+          CategoryFilters.parse(filters),
+          transaction,
+        );
+      },
+    );
+  }
 }

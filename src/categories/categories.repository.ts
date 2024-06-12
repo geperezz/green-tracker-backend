@@ -125,15 +125,6 @@ export class CategoriesRepository {
     );
   }
 
-  private transformFiltersToWhereConditions(filters?: CategoryFilters) {
-    return and(
-      filters?.name ? eq(categoriesTable.name, filters.name) : undefined,
-      filters?.indicatorIndex
-        ? eq(categoriesTable.indicatorIndex, filters.indicatorIndex)
-        : undefined,
-    );
-  }
-
   async replace(
     categoryUniqueTrait: CategoryUniqueTrait,
     replacementData: CategoryReplacement,
@@ -187,6 +178,33 @@ export class CategoriesRepository {
 
         return Category.parse(deletedCategory);
       },
+    );
+  }
+
+  async deleteMany(
+    filters?: CategoryFilters,
+    transaction?: DrizzleTransaction,
+  ): Promise<Category[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const deletedCategories = await transaction
+          .delete(categoriesTable)
+          .where(this.transformFiltersToWhereConditions(filters))
+          .returning();
+
+        return deletedCategories.map((deletedCategory) =>
+          Category.parse(deletedCategory),
+        );
+      },
+    );
+  }
+
+  private transformFiltersToWhereConditions(filters?: CategoryFilters) {
+    return and(
+      filters?.name ? eq(categoriesTable.name, filters.name) : undefined,
+      filters?.indicatorIndex
+        ? eq(categoriesTable.indicatorIndex, filters.indicatorIndex)
+        : undefined,
     );
   }
 }

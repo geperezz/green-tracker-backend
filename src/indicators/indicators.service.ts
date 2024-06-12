@@ -121,14 +121,26 @@ export class IndicatorsService {
   async replace(
     indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
     replacementDataDto: IndicatorReplacementDto,
+    transaction?: DrizzleTransaction,
   ): Promise<IndicatorDto> {
     try {
-      const newIndicatorSchema = await this.indicatorsRepository.replace(
-        IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
-        IndicatorReplacement.parse(replacementDataDto),
-      );
+      return await (transaction ?? this.drizzleClient).transaction(
+        async (transaction) => {
+          const newIndicatorSchema = await this.indicatorsRepository.replace(
+            IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
+            IndicatorReplacement.parse(replacementDataDto),
+          );
 
-      return IndicatorDto.create(newIndicatorSchema);
+          const categories = await this.categoriesService.findAll(
+            CategoryFiltersDto.create({
+              indicatorIndex: newIndicatorSchema.index,
+            }),
+            transaction,
+          );
+
+          return IndicatorDto.create({ ...newIndicatorSchema, categories });
+        },
+      );
     } catch (error) {
       if (error instanceof IndicatorNotFoundRepositoryError) {
         throw new IndicatorNotFoundError();
@@ -140,13 +152,26 @@ export class IndicatorsService {
 
   async delete(
     indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
+    transaction?: DrizzleTransaction,
   ): Promise<IndicatorDto> {
     try {
-      const deletedIndicatorSchema = await this.indicatorsRepository.delete(
-        IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
-      );
+      return await (transaction ?? this.drizzleClient).transaction(
+        async (transaction) => {
+          const categories = await this.categoriesService.findAll(
+            CategoryFiltersDto.create({
+              indicatorIndex: indicatorUniqueTraitDto.index,
+            }),
+            transaction,
+          );
 
-      return IndicatorDto.create(deletedIndicatorSchema);
+          const deletedIndicatorSchema = await this.indicatorsRepository.delete(
+            IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
+            transaction,
+          );
+
+          return IndicatorDto.create({ ...deletedIndicatorSchema, categories });
+        },
+      );
     } catch (error) {
       if (error instanceof IndicatorNotFoundRepositoryError) {
         throw new IndicatorNotFoundError();
