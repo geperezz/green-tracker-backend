@@ -129,6 +129,7 @@ export class IndicatorsService {
           const newIndicatorSchema = await this.indicatorsRepository.replace(
             IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
             IndicatorReplacement.parse(replacementDataDto),
+            transaction,
           );
 
           const categories = await this.categoriesService.findAll(

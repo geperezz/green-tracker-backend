@@ -30,7 +30,7 @@ export class CriteriaService {
           return null;
         }
 
-        return Criterion.parse(criterion);
+        return CriterionDto.create(criterion);
       },
     );
   }
@@ -38,7 +38,7 @@ export class CriteriaService {
   async findAll(
     categoryUniqueTraitDto: CategoryUniqueTraitDto,
     transaction?: DrizzleTransaction,
-  ) {
+  ): Promise<CriterionDto[]> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
         const criteria = await this.criteriaRepository.findAll(
@@ -48,11 +48,9 @@ export class CriteriaService {
           transaction,
         );
 
-        return await Promise.all(
-          criteria.map(async (criterion) => {
-            return Criterion.parse(criterion);
-          }),
-        );
+        return criteria.map((criterion) => {
+          return CriterionDto.create(criterion);
+        });
       },
     );
   }

@@ -77,8 +77,8 @@ export class CriteriaRepository {
           .from(criteriaTable)
           .where(this.transformFiltersToWhereConditions(filters));
 
-        return await Promise.all(
-          nonValidatedEvidence.map((evidence) => Criterion.parse(evidence)),
+        return nonValidatedEvidence.map((evidence) =>
+          Criterion.parse(evidence),
         );
       },
     );
@@ -86,7 +86,9 @@ export class CriteriaRepository {
 
   private transformFiltersToWhereConditions(filters?: CriteriaFilters) {
     return and(
-      filters?.categoryName ? eq(criteriaTable.categoryName, filters.categoryName) : undefined,
+      filters?.categoryName
+        ? eq(criteriaTable.categoryName, filters.categoryName)
+        : undefined,
     );
   }
 
