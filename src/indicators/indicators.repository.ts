@@ -95,6 +95,20 @@ export class IndicatorsRepository {
     );
   }
 
+  async findAll(transaction?: DrizzleTransaction): Promise<Indicator[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const nonValidatedIndicators = await transaction
+          .select()
+          .from(indicatorsTable);
+
+        return nonValidatedIndicators.map((indicator) =>
+          Indicator.parse(indicator),
+        );
+      },
+    );
+  }
+
   async replace(
     indicatorUniqueTrait: IndicatorUniqueTrait,
     replacementData: IndicatorReplacement,

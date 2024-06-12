@@ -42,22 +42,12 @@ export class CategoriesService {
           return null;
         }
 
-        console.log("lmao")
-        console.log(category.name)
-
         const criteria = await this.criteriaService.findAll(
           CriteriaCategoryUniqueTraitDto.create({
             categoryName: category.name,
           }),
           transaction,
         );
-
-        console.log("criteria fuera")
-        console.log(criteria)
-
-        const a = CategoryDto.create({ ...category, criteria });
-        console.log("a")
-        console.log(a)
 
         return CategoryDto.create({ ...category, criteria });
       },
@@ -72,8 +62,8 @@ export class CategoriesService {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
         const categorySchemasPage = await this.categoriesRepository.findPage(
-            PaginationOptions.parse(paginationOptionsDto),
-            CategoryFilters.parse(filters),
+          PaginationOptions.parse(paginationOptionsDto),
+          CategoryFilters.parse(filters),
           transaction,
         );
 
@@ -93,6 +83,32 @@ export class CategoriesService {
         };
 
         return categoryDtosPage;
+      },
+    );
+  }
+
+  async findAll(
+    filters?: CategoryFiltersDto,
+    transaction?: DrizzleTransaction,
+  ): Promise<CategoryDto[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const categorySchemas = await this.categoriesRepository.findAll(
+          CategoryFilters.parse(filters),
+          transaction,
+        );
+
+        return await Promise.all(
+          categorySchemas.map(async (category) => {
+            const criteria = await this.criteriaService.findAll(
+              CriteriaCategoryUniqueTraitDto.create({
+                categoryName: category.name,
+              }),
+              transaction,
+            );
+            return CategoryDto.create({ ...category, criteria });
+          }),
+        );
       },
     );
   }

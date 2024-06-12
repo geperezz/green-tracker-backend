@@ -11,57 +11,30 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import {
-  IndicatorNotFoundError,
-  IndicatorsRepository,
-} from './indicators.repository';
 import { IndicatorCreationDto } from './dtos/indicator-creation.dto';
 import { IndicatorDto } from './dtos/indicator.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
 import { IndicatorsPageDto } from './dtos/indicators-page.dto';
 import { IndicatorReplacementDto } from './dtos/indicator-replacement.dto';
 import { IndicatorUniqueTraitDto } from './dtos/indicator-unique-trait.dto';
-import { IndicatorCreation } from './schemas/indicator-creation.schema';
-import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
-import { IndicatorUniqueTrait } from './schemas/indicator-unique-trait.schema';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
-import { IndicatorReplacement } from './schemas/indicator-replacement.schema';
+import {
+  IndicatorNotFoundError,
+  IndicatorsService,
+} from './indicators.service';
 
 @Controller('/indicators/')
 @ApiTags('Indicators')
 @LoggedInAs('superadmin', 'admin')
 export class IndicatorsController {
-  constructor(private readonly indicatorsRepository: IndicatorsRepository) {}
+  constructor(private readonly indicatorsService: IndicatorsService) {}
 
   @Post()
   async create(
     @Body()
     creationDataDto: IndicatorCreationDto,
   ): Promise<IndicatorDto> {
-    const createdIndicatorSchema = await this.indicatorsRepository.create(
-      IndicatorCreation.parse(creationDataDto),
-    );
-    return IndicatorDto.fromSchema(createdIndicatorSchema);
-  }
-
-  @Get('/:index/')
-  @LoggedInAs('unit')
-  async findOne(
-    @Param()
-    indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
-  ): Promise<IndicatorDto> {
-    const indicatorSchema = await this.indicatorsRepository.findOne(
-      IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
-    );
-
-    if (!indicatorSchema) {
-      throw new NotFoundException(
-        'Indicator not found',
-        `There is no indicator with index ${indicatorUniqueTraitDto.index}`,
-      );
-    }
-
-    return IndicatorDto.fromSchema(indicatorSchema);
+    return await this.indicatorsService.create(creationDataDto);
   }
 
   @Get()
@@ -70,18 +43,33 @@ export class IndicatorsController {
     @Query()
     paginationOptionsDto: PaginationOptionsDto,
   ): Promise<IndicatorsPageDto> {
-    const indicatorSchemasPage = await this.indicatorsRepository.findPage(
-      PaginationOptions.parse(paginationOptionsDto),
+    return await this.indicatorsService.findPage(paginationOptionsDto);
+  }
+
+  @Get('/all/')
+  @LoggedInAs('unit')
+  async findAll(): Promise<IndicatorDto[]> {
+    return await this.indicatorsService.findAll();
+  }
+
+  @Get('/:index/')
+  @LoggedInAs('unit')
+  async findOne(
+    @Param()
+    indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
+  ): Promise<IndicatorDto> {
+    const indicator = await this.indicatorsService.findOne(
+      indicatorUniqueTraitDto,
     );
 
-    const indicatorDtosPage = {
-      ...indicatorSchemasPage,
-      items: indicatorSchemasPage.items.map((indicatorSchema) =>
-        IndicatorDto.fromSchema(indicatorSchema),
-      ),
-    };
+    if (!indicator) {
+      throw new NotFoundException(
+        'Indicator not found',
+        `There is no indicator with index ${indicatorUniqueTraitDto.index}`,
+      );
+    }
 
-    return indicatorDtosPage;
+    return indicator;
   }
 
   @Put('/:index/')
@@ -92,12 +80,10 @@ export class IndicatorsController {
     replacementDataDto: IndicatorReplacementDto,
   ): Promise<IndicatorDto> {
     try {
-      const newIndicatorSchema = await this.indicatorsRepository.replace(
-        IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
-        IndicatorReplacement.parse(replacementDataDto),
+      return await this.indicatorsService.replace(
+        indicatorUniqueTraitDto,
+        replacementDataDto,
       );
-
-      return IndicatorDto.fromSchema(newIndicatorSchema);
     } catch (error) {
       if (error instanceof IndicatorNotFoundError) {
         throw new NotFoundException('Indicator not found', {
@@ -116,11 +102,7 @@ export class IndicatorsController {
     indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
   ): Promise<IndicatorDto> {
     try {
-      const deletedIndicatorSchema = await this.indicatorsRepository.delete(
-        IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
-      );
-
-      return IndicatorDto.fromSchema(deletedIndicatorSchema);
+      return await this.indicatorsService.delete(indicatorUniqueTraitDto);
     } catch (error) {
       if (error instanceof IndicatorNotFoundError) {
         throw new NotFoundException('Indicator not found', {

@@ -8,7 +8,7 @@ import { CriteriaModule } from 'src/criteria/criteria.module';
 @Module({
   imports: [CriteriaModule],
   providers: [CategoriesRepository, CategoriesService],
-  exports: [CategoriesRepository],
+  exports: [CategoriesRepository, CategoriesService],
   controllers: [CategoriesController],
 })
 export class CategoriesModule {}

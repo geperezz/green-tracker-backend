@@ -107,6 +107,24 @@ export class CategoriesRepository {
     );
   }
 
+  async findAll(
+    filters?: CategoryFilters,
+    transaction?: DrizzleTransaction,
+  ): Promise<Category[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const nonValidatedCategories = await transaction
+          .select()
+          .from(categoriesTable)
+          .where(this.transformFiltersToWhereConditions(filters));
+
+        return nonValidatedCategories.map((category) =>
+          Category.parse(category),
+        );
+      },
+    );
+  }
+
   private transformFiltersToWhereConditions(filters?: CategoryFilters) {
     return and(
       filters?.name ? eq(categoriesTable.name, filters.name) : undefined,
