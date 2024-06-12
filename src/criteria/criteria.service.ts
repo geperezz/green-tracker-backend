@@ -39,8 +39,6 @@ export class CriteriaService {
     categoryUniqueTraitDto: CategoryUniqueTraitDto,
     transaction?: DrizzleTransaction,
   ) {
-    console.log('categoryUniqueTraitDto');
-    console.log(categoryUniqueTraitDto);
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
         const criteria = await this.criteriaRepository.findAll(
@@ -49,8 +47,7 @@ export class CriteriaService {
           }),
           transaction,
         );
-        console.log('criteria');
-        console.log(criteria);
+
         return await Promise.all(
           criteria.map(async (criterion) => {
             return Criterion.parse(criterion);

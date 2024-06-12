@@ -13,6 +13,7 @@ import { ActivitiesModule } from './activities/activities.module';
 import { AdminsModule } from './admins/admins.module';
 import { EvidenceModule } from './evidence/evidence.module';
 import { UnitsModule } from './units/units.module';
+import { RecommendedCategoriesModule } from './recommended-categories/recommended-categories.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { UnitsModule } from './units/units.module';
     ActivitiesModule,
     ActivitiesModule,
     EvidenceModule,
+    RecommendedCategoriesModule,
   ],
 })
 export class AppModule {}

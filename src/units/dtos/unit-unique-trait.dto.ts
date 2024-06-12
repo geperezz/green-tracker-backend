@@ -1,9 +1,9 @@
 import { createZodDto } from 'nestjs-zod';
 
-import { UnitDtoSchema } from './unit.dto';
+import { unitDtoSchema } from './unit.dto';
 import { z } from 'nestjs-zod/z';
 
-export const unitUniqueTraitDtoSchema = UnitDtoSchema.pick({
+export const unitUniqueTraitDtoSchema = unitDtoSchema.pick({
   id: true,
 });
 

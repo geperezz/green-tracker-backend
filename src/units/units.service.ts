@@ -12,6 +12,9 @@ import { UserCreationDto } from 'src/users/dtos/user-creation.dto';
 import { UserUniqueTraitDto } from 'src/users/dtos/user-unique-trait.dto';
 import { UserFiltersDto } from 'src/users/dtos/user-filters.dto';
 import { UserReplacementDto } from 'src/users/dtos/user-replacement.dto';
+import { RecommendedCategoriesRepository } from 'src/recommended-categories/recommended-categories.repository';
+import { RecommendedCategoryCreation } from 'src/recommended-categories/schemas/recommended-category-creation.schema';
+import { RecommendedCategoryFilters } from 'src/recommended-categories/schemas/recommended-category-filters.schema';
 
 export abstract class UnitsServiceError extends Error {}
 export class UnitNotFoundError extends UnitsServiceError {}
@@ -22,6 +25,7 @@ export class UnitsService {
     @Inject('DRIZZLE_CLIENT')
     private readonly drizzleClient: DrizzleClient,
     private readonly usersService: UsersService,
+    private readonly recommendedCategoriesRepository: RecommendedCategoriesRepository,
   ) {}
 
   async create(
@@ -35,7 +39,18 @@ export class UnitsService {
           transaction,
         );
 
-        return UnitDto.create(unitAsUser);
+        const recommendedCategories =
+          await this.recommendedCategoriesRepository.createMany(
+            unitCreationDto.recommendedCategories.map((recommendedCategory) => {
+              return RecommendedCategoryCreation.parse({
+                ...recommendedCategory,
+                unitId: unitAsUser.id,
+              });
+            }),
+            transaction,
+          );
+
+        return UnitDto.create({ ...unitAsUser, recommendedCategories });
       },
     );
   }
@@ -56,7 +71,14 @@ export class UnitsService {
         if (!unitAsUser) {
           return null;
         }
-        return UnitDto.create(unitAsUser);
+
+        const recommendedCategories =
+          await this.recommendedCategoriesRepository.findAll(
+            RecommendedCategoryFilters.parse({ unitId: unitUniqueTraitDto.id }),
+            transaction,
+          );
+
+        return UnitDto.create({ ...unitAsUser, recommendedCategories });
       },
     );
   }
@@ -75,8 +97,16 @@ export class UnitsService {
 
         const unitDtosPage = {
           ...unitsAsUsersPage,
-          items: unitsAsUsersPage.items.map((unitAsUser) =>
-            UnitDto.create(unitAsUser),
+          items: await Promise.all(
+            unitsAsUsersPage.items.map(async (unitAsUser) => {
+              const recommendedCategories =
+                await this.recommendedCategoriesRepository.findAll(
+                  RecommendedCategoryFilters.parse({ unitId: unitAsUser.id }),
+                  transaction,
+                );
+
+              return UnitDto.create({ ...unitAsUser, recommendedCategories });
+            }),
           ),
         };
 
@@ -104,7 +134,14 @@ export class UnitsService {
           }),
           transaction,
         );
-        return UnitDto.create(newUnit);
+
+        const recommendedCategories =
+          await this.recommendedCategoriesRepository.findAll(
+            RecommendedCategoryFilters.parse({ unitId: newUnit.id }),
+            transaction,
+          );
+
+        return UnitDto.create({ ...newUnit, recommendedCategories });
       },
     );
   }
@@ -119,11 +156,18 @@ export class UnitsService {
           throw new UnitNotFoundError();
         }
 
+        const recommendedCategories =
+          await this.recommendedCategoriesRepository.findAll(
+            RecommendedCategoryFilters.parse({ unitId: unitUniqueTraitDto.id }),
+            transaction,
+          );
+
         const unit = await this.usersService.delete(
           UserUniqueTraitDto.create(unitUniqueTraitDto),
           transaction,
         );
-        return UnitDto.create(unit);
+
+        return UnitDto.create({ ...unit, recommendedCategories });
       },
     );
   }
