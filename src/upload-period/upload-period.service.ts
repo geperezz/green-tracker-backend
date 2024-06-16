@@ -15,7 +15,7 @@ export class UploadPeriodService {
     private readonly uploadPeriodRepository: UploadPeriodRepository,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async sendReminders() {
     const today = new Date().setHours(0, 0, 0, 0);
     try {
