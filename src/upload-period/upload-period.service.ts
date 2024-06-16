@@ -1,12 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
-import { UploadPeriodDto } from './dtos/upload-period.dto';
-import { uploadPeriodTable } from './upload-period.table';
-import { eq } from 'drizzle-orm';
-import { UploadPeriod } from './schemas/upload-period.schema';
+import { DrizzleClient } from 'src/drizzle/drizzle.client';
 import { MailerService } from '@nestjs-modules/mailer';
 import { UnitsService } from 'src/units/units.service';
+import { UploadPeriodRepository } from './upload-period.repository';
 
 @Injectable()
 export class UploadPeriodService {
@@ -15,30 +12,14 @@ export class UploadPeriodService {
     private readonly drizzleClient: DrizzleClient,
     private readonly mailerService: MailerService,
     private readonly unitsService: UnitsService,
+    private readonly uploadPeriodRepository: UploadPeriodRepository,
   ) {}
-
-  async findOne(
-    transaction?: DrizzleTransaction,
-  ): Promise<UploadPeriodDto | null> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [foundUploadPeriod = null] = await transaction
-          .select()
-          .from(uploadPeriodTable);
-
-        if (!foundUploadPeriod) {
-          return null;
-        }
-        return UploadPeriod.parse(foundUploadPeriod);
-      },
-    );
-  }
 
   @Cron(CronExpression.EVERY_10_SECONDS)
   async sendReminders() {
     const today = new Date().setHours(0, 0, 0, 0);
     try {
-      const uploadPeriod = await this.findOne();
+      const uploadPeriod = await this.uploadPeriodRepository.findAll();
       if (!uploadPeriod) return;
 
       if (today != new Date(uploadPeriod.startTimestamp).setHours(0, 0, 0, 0))
@@ -54,7 +35,8 @@ export class UploadPeriodService {
           template: './startReminder',
           context: {
             unit: unit.name,
-            startTimestamp: uploadPeriod.startTimestamp.toLocaleDateString('es-ES'),
+            startTimestamp:
+              uploadPeriod.startTimestamp.toLocaleDateString('es-ES'),
             endTimestamp: uploadPeriod.endTimestamp.toLocaleDateString('es-ES'),
           },
           attachments: [
@@ -69,7 +51,7 @@ export class UploadPeriodService {
       });
     } catch (error) {
       throw new Error(
-        'An unexpected situation ocurred while sending the period start reminder emails',
+        'An unexpected situation ocurred while sending the period start reminder emails', error
       );
     }
   }

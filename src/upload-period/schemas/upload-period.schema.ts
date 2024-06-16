@@ -6,5 +6,5 @@ export const uploadPeriodSchema = z.object({
   endTimestamp: z.coerce.date(),
 });
 
-export const UploadPeriod = uploadPeriodSchema.brand('Indicator');
+export const UploadPeriod = uploadPeriodSchema.brand('UploadPeriod');
 export type UploadPeriod = z.infer<typeof UploadPeriod>;
