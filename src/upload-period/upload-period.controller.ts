@@ -39,7 +39,7 @@ export class UploadPeriodController {
         uploadPeriodReplacement.parse(replacementDataDto),
       );
 
-      return UploadPeriodDto.fromSchema(newUploadPeriodSchema);
+      return UploadPeriodDto.create(newUploadPeriodSchema);
     } catch (error) {
       throw error;
     }

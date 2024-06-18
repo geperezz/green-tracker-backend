@@ -5,10 +5,11 @@ import { DrizzleMigrator } from './drizzle.migrator';
 import { Config } from 'src/config/config.loader';
 import { DrizzleSeeder } from './drizzle.seeder';
 import { UsersModule } from 'src/users/users.module';
+import { UploadPeriodModule } from 'src/upload-period/upload-period.module';
 
 @Global()
 @Module({
-  imports: [UsersModule],
+  imports: [UsersModule, UploadPeriodModule],
   providers: [
     {
       provide: 'DRIZZLE_CLIENT',

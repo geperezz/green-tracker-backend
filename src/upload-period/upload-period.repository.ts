@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Body, Inject, Injectable } from '@nestjs/common';
 import { count, eq } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
@@ -16,6 +16,22 @@ export class UploadPeriodRepository {
     @Inject('DRIZZLE_CLIENT')
     private readonly drizzleClient: DrizzleClient,
   ) {}
+
+  async create(
+    creationData: UploadPeriodDto,
+    transaction?: DrizzleTransaction,
+  ): Promise<UploadPeriodDto> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const [createdUploadPeriod] = await transaction
+          .insert(uploadPeriodTable)
+          .values(creationData)
+          .returning();
+
+        return UploadPeriodDto.create(createdUploadPeriod);
+      },
+    );
+  }
 
   async findAll(
     transaction?: DrizzleTransaction,
