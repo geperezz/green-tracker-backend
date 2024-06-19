@@ -3,11 +3,16 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { MailerService } from '@nestjs-modules/mailer';
 import { UnitsService } from 'src/units/units.service';
 import { UploadPeriodRepository } from './upload-period.repository';
+import { UploadPeriodDto } from './dtos/upload-period.dto';
+import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
+import { UploadPeriod } from './schemas/upload-period.schema';
+import { uploadPeriodTable } from './upload-period.table';
 
 @Injectable()
 export class UploadPeriodService {
   constructor(
     @Inject('DRIZZLE_CLIENT')
+    private readonly drizzleClient: DrizzleClient,
     private readonly mailerService: MailerService,
     private readonly unitsService: UnitsService,
     private readonly uploadPeriodRepository: UploadPeriodRepository,
@@ -36,6 +41,17 @@ export class UploadPeriodService {
         error,
       );
     }
+  }
+
+  async findAll(transaction?: DrizzleTransaction): Promise<UploadPeriodDto> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const foundUploadPeriod =
+          await this.uploadPeriodRepository.findAll(transaction);
+
+        return UploadPeriod.parse(foundUploadPeriod);
+      },
+    );
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)

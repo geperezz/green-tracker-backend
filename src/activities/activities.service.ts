@@ -40,7 +40,6 @@ export class ActivitiesService {
     private readonly evidenceService: EvidenceService,
     private readonly unitsService: UnitsService,
     private readonly mailerService: MailerService,
-    private readonly uploadPeriodRepository: UploadPeriodRepository,
     private readonly uploadPeriodService: UploadPeriodService,
   ) {}
 
@@ -185,7 +184,7 @@ export class ActivitiesService {
   ): Promise<Activity[]> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const uploadPeriod = await this.uploadPeriodRepository.findAll();
+        const uploadPeriod = await this.uploadPeriodService.findAll(transaction);
         if (!uploadPeriod) return [];
 
         const filteredActivitiesQuery = await transaction
@@ -216,7 +215,7 @@ export class ActivitiesService {
     try {
       if (!(await this.uploadPeriodService.isCurrentUploadPeriodLastMonth())) return;
 
-      const uploadPeriod = await this.uploadPeriodRepository.findAll();
+      const uploadPeriod = await this.uploadPeriodService.findAll();
       if (!uploadPeriod) return;
 
       //Shh
