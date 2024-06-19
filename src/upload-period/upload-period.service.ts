@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { DrizzleClient } from 'src/drizzle/drizzle.client';
 import { MailerService } from '@nestjs-modules/mailer';
 import { UnitsService } from 'src/units/units.service';
 import { UploadPeriodRepository } from './upload-period.repository';
@@ -9,11 +8,35 @@ import { UploadPeriodRepository } from './upload-period.repository';
 export class UploadPeriodService {
   constructor(
     @Inject('DRIZZLE_CLIENT')
-    private readonly drizzleClient: DrizzleClient,
     private readonly mailerService: MailerService,
     private readonly unitsService: UnitsService,
     private readonly uploadPeriodRepository: UploadPeriodRepository,
   ) {}
+
+  //Check if today is inside uploadPeriod last month
+  async isCurrentUploadPeriodLastMonth() {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const uploadPeriod = await this.uploadPeriodRepository.findAll();
+      if (!uploadPeriod) return false;
+
+      const endTimestamp = new Date(uploadPeriod.endTimestamp);
+      endTimestamp.setHours(0, 0, 0, 0);
+
+      const remainingDays =
+        (endTimestamp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+
+      const isLastMonth = remainingDays <= 31;
+      return isLastMonth;
+    } catch (error) {
+      throw new Error(
+        'An unexpected situation ocurred checking the uploadPeriod',
+        error,
+      );
+    }
+  }
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async sendReminders() {
@@ -47,11 +70,11 @@ export class UploadPeriodService {
             },
           ],
         });
-        console.log('vivo');
       });
     } catch (error) {
       throw new Error(
-        'An unexpected situation ocurred while sending the period start reminder emails', error
+        'An unexpected situation ocurred while sending the period start reminder emails',
+        error,
       );
     }
   }

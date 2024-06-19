@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, eq } from 'drizzle-orm';
+import { and, between, count, eq } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
 import { activitiesTable } from './activities.table';
@@ -41,7 +41,6 @@ export class ActivitiesRepository {
     activityUniqueTrait: ActivityUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Activity | null> {
-    console.log(activityUniqueTrait);
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
         const [foundActivity = null] = await transaction
@@ -99,7 +98,25 @@ export class ActivitiesRepository {
     );
   }
 
-  private transformFiltersToWhereConditions(filters?: ActivityFilters) {
+  async findAll(
+    filters?: ActivityFilters,
+    transaction?: DrizzleTransaction,
+  ): Promise<Activity[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const filteredActivitiesQuery = await transaction
+          .select()
+          .from(activitiesTable)
+          .where(this.transformFiltersToWhereConditions(filters));
+
+        return filteredActivitiesQuery.map((activity) =>
+          Activity.parse(activity),
+        );
+      },
+    );
+  }
+
+  transformFiltersToWhereConditions(filters?: ActivityFilters) {
     return and(
       filters?.id ? eq(activitiesTable.id, filters.id) : undefined,
       filters?.name ? eq(activitiesTable.name, filters.name) : undefined,
