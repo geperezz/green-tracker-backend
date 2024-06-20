@@ -1,7 +1,9 @@
 import { z } from 'nestjs-zod/z';
 
+import { indicatorSchema } from 'src/indicators/schemas/indicator.schema';
+
 export const criterionSchema = z.object({
-  indicatorIndex: z.coerce.number().int().min(0),
+  indicatorIndex: indicatorSchema.shape.index,
   subindex: z.coerce.number().int().min(0),
   englishName: z.string().trim().min(1),
   spanishAlias: z.string().trim().min(1),

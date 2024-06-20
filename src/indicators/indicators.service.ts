@@ -60,7 +60,7 @@ export class IndicatorsService {
           return null;
         }
 
-        const categories = await this.categoriesService.findAll(
+        const categories = await this.categoriesService.findManyCategories(
           CategoryFiltersDto.create({ indicatorIndex: indicator.index }),
           transaction,
         );
@@ -85,10 +85,13 @@ export class IndicatorsService {
           ...indicatorSchemasPage,
           items: await Promise.all(
             indicatorSchemasPage.items.map(async (indicator) => {
-              const categories = await this.categoriesService.findAll(
-                CategoryFiltersDto.create({ indicatorIndex: indicator.index }),
-                transaction,
-              );
+              const categories =
+                await this.categoriesService.findManyCategories(
+                  CategoryFiltersDto.create({
+                    indicatorIndex: indicator.index,
+                  }),
+                  transaction,
+                );
               return IndicatorDto.create({ ...indicator, categories });
             }),
           ),
@@ -107,7 +110,7 @@ export class IndicatorsService {
 
         return await Promise.all(
           indicatorSchemas.map(async (indicator) => {
-            const categories = await this.categoriesService.findAll(
+            const categories = await this.categoriesService.findManyCategories(
               CategoryFiltersDto.create({ indicatorIndex: indicator.index }),
               transaction,
             );
@@ -132,7 +135,7 @@ export class IndicatorsService {
             transaction,
           );
 
-          const categories = await this.categoriesService.findAll(
+          const categories = await this.categoriesService.findManyCategories(
             CategoryFiltersDto.create({
               indicatorIndex: newIndicatorSchema.index,
             }),
@@ -158,7 +161,7 @@ export class IndicatorsService {
     try {
       return await (transaction ?? this.drizzleClient).transaction(
         async (transaction) => {
-          const categories = await this.categoriesService.findAll(
+          const categories = await this.categoriesService.findManyCategories(
             CategoryFiltersDto.create({
               indicatorIndex: indicatorUniqueTraitDto.index,
             }),

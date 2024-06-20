@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,68 +12,61 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import {
-  CategoryNotFoundError,
-  CategoriesRepository,
-} from './categories.repository';
+import { CategoryNotFoundError } from './categories.repository';
 import { CategoryCreationDto } from './dtos/category-creation.dto';
 import { CategoryDto } from './dtos/category.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
 import { CategoriesPageDto } from './dtos/categories-page.dto';
 import { CategoryReplacementDto } from './dtos/category-replacement.dto';
 import { CategoryUniqueTraitDto } from './dtos/category-unique-trait.dto';
-import { CategoryCreation } from './schemas/category-creation.schema';
-import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
-import { CategoryUniqueTrait } from './schemas/category-unique-trait.schema';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
-import { CategoryReplacement } from './schemas/category-replacement.schema';
-import { CategoryCreationPathDto } from './dtos/category-creation-path.dto';
-import { CategoryCreationBodyDto } from './dtos/category-creation-body.dto';
 import { CategoryIndicatorIndexDto } from './dtos/category-indicator-index.dto';
-import { CategoryIndicatorIndex } from './schemas/category-indicator-index.schema';
-import { CategoriesService } from './categories.service';
+import {
+  CategoriesService,
+  CriterionNotFoundError,
+} from './categories.service';
 
 @Controller('/indicators/:indicatorIndex/categories/')
 @ApiTags('Categories')
 @LoggedInAs('superadmin', 'admin')
 export class CategoriesController {
-  constructor(
-    private readonly categoriesRepository: CategoriesRepository,
-    private readonly categoriesService: CategoriesService,
-  ) {}
+  constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
-  async create(
+  async createCategory(
     @Param()
-    creationPathDto: CategoryCreationPathDto,
+    indicatorIndexDto: CategoryIndicatorIndexDto,
     @Body()
-    creationDataDto: CategoryCreationBodyDto,
+    creationDataDto: CategoryCreationDto,
   ): Promise<CategoryDto> {
-    const combinedData = {
-      ...creationPathDto,
-      ...creationDataDto,
-    };
-
-    const createdCategorySchema = await this.categoriesRepository.create(
-      CategoryCreation.parse(combinedData),
-    );
-    return createdCategorySchema;
+    try {
+      return await this.categoriesService.createCategory(
+        indicatorIndexDto,
+        creationDataDto,
+      );
+    } catch (error) {
+      if (error instanceof CriterionNotFoundError) {
+        throw new BadRequestException('Criterion not found', {
+          description: `Trying to put into the category a criterion that does not exist. There is no criterion no. ${error.criterionSubindex} for the indicator no. ${indicatorIndexDto.indicatorIndex}`,
+          cause: error,
+        });
+      }
+      throw error;
+    }
   }
 
   @Get('/:name/')
   @LoggedInAs('unit')
-  async findOne(
+  async findCategory(
     @Param()
-    categoryUniqueTraitDto: CategoryUniqueTraitDto,
+    uniqueTraitDto: CategoryUniqueTraitDto,
   ): Promise<CategoryDto> {
-    const category = await this.categoriesService.findOne(
-      CategoryUniqueTrait.parse(categoryUniqueTraitDto),
-    );
+    const category = await this.categoriesService.findCategory(uniqueTraitDto);
 
     if (!category) {
       throw new NotFoundException(
         'Category not found',
-        `There is no category with indicator ${categoryUniqueTraitDto.indicatorIndex} and name ${categoryUniqueTraitDto.name}`,
+        `There is no category named ${uniqueTraitDto.name} for the indicator no. ${uniqueTraitDto.indicatorIndex}`,
       );
     }
 
@@ -81,38 +75,40 @@ export class CategoriesController {
 
   @Get()
   @LoggedInAs('unit')
-  async findPage(
+  async findCategoriesPage(
     @Param()
-    categoryIndicatorIndexDto: CategoryIndicatorIndexDto,
+    indicatorIndexDto: CategoryIndicatorIndexDto,
     @Query()
     paginationOptionsDto: PaginationOptionsDto,
   ): Promise<CategoriesPageDto> {
-    const categoriesPage = await this.categoriesService.findPage(
-      PaginationOptions.parse(paginationOptionsDto),
-      CategoryIndicatorIndex.parse(categoryIndicatorIndexDto),
+    return await this.categoriesService.findCategoriesPage(
+      indicatorIndexDto,
+      paginationOptionsDto,
     );
-
-    return categoriesPage;
   }
 
   @Put('/:name/')
-  async replace(
+  async replaceCategory(
     @Param()
-    categoryUniqueTraitDto: CategoryUniqueTraitDto,
+    uniqueTraitDto: CategoryUniqueTraitDto,
     @Body()
     replacementDataDto: CategoryReplacementDto,
   ): Promise<CategoryDto> {
     try {
-      const newCategorySchema = await this.categoriesRepository.replace(
-        CategoryUniqueTrait.parse(categoryUniqueTraitDto),
-        CategoryReplacement.parse(replacementDataDto),
+      return await this.categoriesService.replaceCategory(
+        uniqueTraitDto,
+        replacementDataDto,
       );
-
-      return newCategorySchema;
     } catch (error) {
       if (error instanceof CategoryNotFoundError) {
         throw new NotFoundException('Category not found', {
-          description: `There is no category with indicator ${categoryUniqueTraitDto.indicatorIndex} and name ${categoryUniqueTraitDto.name}`,
+          description: `There is no category named ${uniqueTraitDto.name} for the indicator no. ${uniqueTraitDto.indicatorIndex}`,
+          cause: error,
+        });
+      }
+      if (error instanceof CriterionNotFoundError) {
+        throw new BadRequestException('Criterion not found', {
+          description: `Trying to put into the category a criterion that does not exist. There is no criterion no. ${error.criterionSubindex} for the indicator no. ${uniqueTraitDto.indicatorIndex}`,
           cause: error,
         });
       }
@@ -122,20 +118,16 @@ export class CategoriesController {
   }
 
   @Delete('/:name/')
-  async delete(
+  async deleteCategory(
     @Param()
-    categoryUniqueTraitDto: CategoryUniqueTraitDto,
+    uniqueTraitDto: CategoryUniqueTraitDto,
   ): Promise<CategoryDto> {
     try {
-      const deletedCategorySchema = await this.categoriesRepository.delete(
-        CategoryUniqueTrait.parse(categoryUniqueTraitDto),
-      );
-
-      return deletedCategorySchema;
+      return await this.categoriesService.deleteCategory(uniqueTraitDto);
     } catch (error) {
       if (error instanceof CategoryNotFoundError) {
         throw new NotFoundException('Category not found', {
-          description: `There is no category with indicator ${categoryUniqueTraitDto.indicatorIndex} and name ${categoryUniqueTraitDto.name}`,
+          description: `There is no category named ${uniqueTraitDto.name} for the indicator no. ${uniqueTraitDto.indicatorIndex}`,
           cause: error,
         });
       }
