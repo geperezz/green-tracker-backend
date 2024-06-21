@@ -1,12 +1,9 @@
 import { createZodDto } from 'nestjs-zod';
-
-import { categoryDtoSchema } from './category.dto';
 import { z } from 'nestjs-zod/z';
 
-export const categoryUniqueTraitDtoSchema = categoryDtoSchema.pick({
-  indicatorIndex: true,
-  name: true,
-});
+import { categoryUniqueTraitSchema } from '../schemas/category-unique-trait.schema';
+
+export const categoryUniqueTraitDtoSchema = categoryUniqueTraitSchema;
 
 type InferredCategoryUniqueTraitDto = z.infer<
   typeof categoryUniqueTraitDtoSchema
@@ -15,6 +12,7 @@ type InferredCategoryUniqueTraitDto = z.infer<
 export class CategoryUniqueTraitDto extends createZodDto(
   categoryUniqueTraitDtoSchema,
 ) {
-  indicatorIndex: InferredCategoryUniqueTraitDto['indicatorIndex'] = super.indicatorIndex;
+  indicatorIndex: InferredCategoryUniqueTraitDto['indicatorIndex'] = super
+    .indicatorIndex;
   name: InferredCategoryUniqueTraitDto['name'] = super.name;
 }

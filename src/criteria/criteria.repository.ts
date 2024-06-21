@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, eq } from 'drizzle-orm';
+import { SQL, and, count, eq } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
 import { criteriaTable } from './criteria.table';
@@ -9,9 +9,8 @@ import { Criterion } from './schemas/criterion.schema';
 import { CriteriaPage } from './schemas/criteria-page.schema';
 import { CriterionReplacement } from './schemas/criterion-replacement.schema';
 import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
-import { CriterionIndicatorIndex } from './schemas/criterion-indicator-index.schema';
-import { CriterionCreationPath } from './schemas/criterion-creation-path.schema';
-import { CriteriaFilters } from './schemas/criteria-filters.schema';
+import { CriterionFilters } from './schemas/criterion-filters.schema';
+import { CriterionUpdate } from './schemas/criterion-update.schema';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -23,7 +22,7 @@ export class CriteriaRepository {
     private readonly drizzleClient: DrizzleClient,
   ) {}
 
-  async create(
+  async createCriterion(
     creationData: CriterionCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
@@ -39,8 +38,8 @@ export class CriteriaRepository {
     );
   }
 
-  async findOne(
-    criterionUniqueTrait: CriterionUniqueTrait,
+  async findCriterion(
+    uniqueTrait: CriterionUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion | null> {
     return await (transaction ?? this.drizzleClient).transaction(
@@ -48,15 +47,7 @@ export class CriteriaRepository {
         const [foundCriterion = null] = await transaction
           .select()
           .from(criteriaTable)
-          .where(
-            and(
-              eq(
-                criteriaTable.indicatorIndex,
-                criterionUniqueTrait.indicatorIndex,
-              ),
-              eq(criteriaTable.subindex, criterionUniqueTrait.subindex),
-            ),
-          );
+          .where(this.transformUniqueTraitToWhereConditions(uniqueTrait));
 
         if (!foundCriterion) {
           return null;
@@ -66,35 +57,9 @@ export class CriteriaRepository {
     );
   }
 
-  async findAll(
-    filters?: CriteriaFilters,
-    transaction?: DrizzleTransaction,
-  ): Promise<Criterion[]> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const nonValidatedEvidence = await transaction
-          .select()
-          .from(criteriaTable)
-          .where(this.transformFiltersToWhereConditions(filters));
-
-        return nonValidatedEvidence.map((evidence) =>
-          Criterion.parse(evidence),
-        );
-      },
-    );
-  }
-
-  private transformFiltersToWhereConditions(filters?: CriteriaFilters) {
-    return and(
-      filters?.categoryName
-        ? eq(criteriaTable.categoryName, filters.categoryName)
-        : undefined,
-    );
-  }
-
-  async findPage(
-    indicatorIndex: CriterionIndicatorIndex,
+  async findCriteriaPage(
     paginationOptions: PaginationOptions,
+    filters?: CriterionFilters,
     transaction?: DrizzleTransaction,
   ): Promise<CriteriaPage> {
     return await (transaction ?? this.drizzleClient).transaction(
@@ -102,9 +67,7 @@ export class CriteriaRepository {
         const filteredCriteriaQuery = transaction
           .select()
           .from(criteriaTable)
-          .where(
-            eq(criteriaTable.indicatorIndex, indicatorIndex.indicatorIndex),
-          )
+          .where(this.transformFiltersToWhereConditions(filters))
           .as('filtered_criteria');
 
         const nonValidatedCriteriaPage = await transaction
@@ -134,52 +97,88 @@ export class CriteriaRepository {
     );
   }
 
-  async replace(
-    criterionUniqueTrait: CriterionUniqueTrait,
-    replacementData: CriterionReplacement,
+  async findManyCriteria(
+    filters?: CriterionFilters,
     transaction?: DrizzleTransaction,
-  ): Promise<Criterion> {
+  ): Promise<Criterion[]> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const [replacedCriterion = null] = await transaction
-          .update(criteriaTable)
-          .set(replacementData)
-          .where(
-            and(
-              eq(
-                criteriaTable.indicatorIndex,
-                criterionUniqueTrait.indicatorIndex,
-              ),
-              eq(criteriaTable.subindex, criterionUniqueTrait.subindex),
-            ),
-          )
-          .returning();
-        if (!replacedCriterion) {
-          throw new CriterionNotFoundError();
-        }
+        const nonValidatedEvidence = await transaction
+          .select()
+          .from(criteriaTable)
+          .where(this.transformFiltersToWhereConditions(filters));
 
-        return Criterion.parse(replacedCriterion);
+        return nonValidatedEvidence.map((criterion) =>
+          Criterion.parse(criterion),
+        );
       },
     );
   }
 
-  async delete(
-    criterionUniqueTrait: CriterionUniqueTrait,
+  private transformFiltersToWhereConditions(
+    filters?: CriterionFilters,
+  ): SQL | undefined {
+    return and(
+      filters?.indicatorIndex
+        ? eq(criteriaTable.indicatorIndex, filters.indicatorIndex)
+        : undefined,
+      filters?.subindex
+        ? eq(criteriaTable.subindex, filters.subindex)
+        : undefined,
+      filters?.englishName
+        ? eq(criteriaTable.englishName, filters.englishName)
+        : undefined,
+      filters?.spanishAlias
+        ? eq(criteriaTable.spanishAlias, filters.spanishAlias)
+        : undefined,
+      filters?.categoryName
+        ? eq(criteriaTable.categoryName, filters.categoryName)
+        : undefined,
+    );
+  }
+
+  async updateCriterion(
+    uniqueTrait: CriterionUniqueTrait,
+    updateData: CriterionUpdate,
+    transaction?: DrizzleTransaction,
+  ): Promise<Criterion> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const [updatedCriterion = null] = await transaction
+          .update(criteriaTable)
+          .set(updateData)
+          .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
+          .returning();
+        if (!updatedCriterion) {
+          throw new CriterionNotFoundError();
+        }
+
+        return Criterion.parse(updatedCriterion);
+      },
+    );
+  }
+
+  async replaceCriterion(
+    uniqueTrait: CriterionUniqueTrait,
+    replacementData: CriterionReplacement,
+    transaction?: DrizzleTransaction,
+  ): Promise<Criterion> {
+    return await this.updateCriterion(
+      uniqueTrait,
+      CriterionUpdate.parse(replacementData),
+      transaction,
+    );
+  }
+
+  async deleteCriterion(
+    uniqueTrait: CriterionUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
         const [deletedCriterion = null] = await transaction
           .delete(criteriaTable)
-          .where(
-            and(
-              eq(
-                criteriaTable.indicatorIndex,
-                criterionUniqueTrait.indicatorIndex,
-              ),
-              eq(criteriaTable.subindex, criterionUniqueTrait.subindex),
-            ),
-          )
+          .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
           .returning();
         if (!deletedCriterion) {
           throw new CriterionNotFoundError();
@@ -187,6 +186,15 @@ export class CriteriaRepository {
 
         return Criterion.parse(deletedCriterion);
       },
+    );
+  }
+
+  private transformUniqueTraitToWhereConditions(
+    uniqueTrait: CriterionUniqueTrait,
+  ): SQL | undefined {
+    return and(
+      eq(criteriaTable.indicatorIndex, uniqueTrait.indicatorIndex),
+      eq(criteriaTable.subindex, uniqueTrait.subindex),
     );
   }
 }
