@@ -15,6 +15,7 @@ import { UserReplacementDto } from 'src/users/dtos/user-replacement.dto';
 import { RecommendedCategoriesRepository } from 'src/recommended-categories/recommended-categories.repository';
 import { RecommendedCategoryCreation } from 'src/recommended-categories/schemas/recommended-category-creation.schema';
 import { RecommendedCategoryFilters } from 'src/recommended-categories/schemas/recommended-category-filters.schema';
+import { UserDto } from 'src/users/dtos/user.dto';
 
 export abstract class UnitsServiceError extends Error {}
 export class UnitNotFoundError extends UnitsServiceError {}
@@ -79,6 +80,30 @@ export class UnitsService {
           );
 
         return UnitDto.create({ ...unitAsUser, recommendedCategories });
+      },
+    );
+  }
+
+  async findAll(transaction?: DrizzleTransaction): Promise<UnitDto[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const unitsAsUsersPage = await this.usersService.findAll(
+          UserFiltersDto.create({ role: 'unit' }),
+          transaction,
+        );
+
+        const unitDtosPage = await Promise.all(
+          unitsAsUsersPage.map(async (unitAsUser) => {
+            const recommendedCategories =
+              await this.recommendedCategoriesRepository.findAll(
+                RecommendedCategoryFilters.parse({ unitId: unitAsUser.id }),
+                transaction,
+              );
+
+            return UnitDto.create({ ...unitAsUser, recommendedCategories });
+          }),
+        );
+        return unitDtosPage;
       },
     );
   }

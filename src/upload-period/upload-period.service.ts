@@ -43,6 +43,21 @@ export class UploadPeriodService {
     }
   }
 
+  async create(
+    creationData: UploadPeriodDto,
+    transaction?: DrizzleTransaction,
+  ): Promise<UploadPeriodDto> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const createdUploadPeriod = await this.uploadPeriodRepository.create(
+          creationData,
+          transaction,
+        );
+        return createdUploadPeriod;
+      },
+    );
+  }
+
   async findAll(transaction?: DrizzleTransaction): Promise<UploadPeriodDto> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
@@ -50,6 +65,19 @@ export class UploadPeriodService {
           await this.uploadPeriodRepository.findAll(transaction);
 
         return UploadPeriod.parse(foundUploadPeriod);
+      },
+    );
+  }
+
+  async replace(
+    creationData: UploadPeriodDto,
+    transaction?: DrizzleTransaction,
+  ): Promise<UploadPeriodDto> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const createdUploadPeriod =
+          await this.uploadPeriodRepository.create(creationData, transaction);
+        return createdUploadPeriod;
       },
     );
   }

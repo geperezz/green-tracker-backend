@@ -21,7 +21,6 @@ import { ActivityFiltersDto } from './dtos/activity-filters.dto';
 import { ActivityFilters } from './schemas/activity-filters.schema';
 import { UnitsService } from 'src/units/units.service';
 import { MailerService } from '@nestjs-modules/mailer';
-import { UploadPeriodRepository } from 'src/upload-period/upload-period.repository';
 import { UploadPeriodService } from 'src/upload-period/upload-period.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Activity } from './schemas/activity.schema';
@@ -184,7 +183,8 @@ export class ActivitiesService {
   ): Promise<Activity[]> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const uploadPeriod = await this.uploadPeriodService.findAll(transaction);
+        const uploadPeriod =
+          await this.uploadPeriodService.findAll(transaction);
         if (!uploadPeriod) return [];
 
         const filteredActivitiesQuery = await transaction
@@ -213,14 +213,14 @@ export class ActivitiesService {
   @Cron(CronExpression.EVERY_WEEK)
   async sendPreDeadlineReminder() {
     try {
-      if (!(await this.uploadPeriodService.isCurrentUploadPeriodLastMonth())) return;
+      if (!(await this.uploadPeriodService.isCurrentUploadPeriodLastMonth()))
+        return;
 
       const uploadPeriod = await this.uploadPeriodService.findAll();
       if (!uploadPeriod) return;
 
-      //Shh
-      const units = await this.unitsService.findPage({ itemsPerPage: 1000 });
-      units.items.forEach(async (unit) => {
+      const units = await this.unitsService.findAll();
+      units.forEach(async (unit) => {
         const activities = await this.findAllCurrent(
           ActivityFilters.parse({ unitId: unit.id }),
         );
