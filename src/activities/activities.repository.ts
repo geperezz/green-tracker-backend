@@ -99,6 +99,24 @@ export class ActivitiesRepository {
     );
   }
 
+  async findMany(
+    filters?: ActivityFilters,
+    transaction?: DrizzleTransaction,
+  ): Promise<Activity[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const nonValidatedActivities = await transaction
+          .select()
+          .from(activitiesTable)
+          .where(this.transformFiltersToWhereConditions(filters));
+
+        return nonValidatedActivities.map((activity) =>
+          Activity.parse(activity),
+        );
+      },
+    );
+  }
+
   private transformFiltersToWhereConditions(filters?: ActivityFilters) {
     return and(
       filters?.id ? eq(activitiesTable.id, filters.id) : undefined,

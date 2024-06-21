@@ -56,6 +56,12 @@ export class UnitsController {
     return unit;
   }
 
+  @Get('/all/')
+  @LoggedInAs('any')
+  async findAll(): Promise<UnitDto[]> {
+    return await this.unitsService.findAll();
+  }
+
   @Get('/:id/')
   @LoggedInAs('superadmin', 'admin')
   async findOne(
@@ -75,7 +81,7 @@ export class UnitsController {
   }
 
   @Get()
-  @LoggedInAs('superadmin', 'admin')
+  @LoggedInAs('any')
   async findPage(
     @Query()
     paginationOptionsDto: PaginationOptionsDto,

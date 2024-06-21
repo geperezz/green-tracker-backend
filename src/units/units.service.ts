@@ -15,6 +15,8 @@ import { UserReplacementDto } from 'src/users/dtos/user-replacement.dto';
 import { RecommendedCategoriesRepository } from 'src/recommended-categories/recommended-categories.repository';
 import { RecommendedCategoryCreation } from 'src/recommended-categories/schemas/recommended-category-creation.schema';
 import { RecommendedCategoryFilters } from 'src/recommended-categories/schemas/recommended-category-filters.schema';
+import { ActivitiesRepository } from 'src/activities/activities.repository';
+import { ActivityFilters } from 'src/activities/schemas/activity-filters.schema';
 
 export abstract class UnitsServiceError extends Error {}
 export class UnitNotFoundError extends UnitsServiceError {}
@@ -26,6 +28,7 @@ export class UnitsService {
     private readonly drizzleClient: DrizzleClient,
     private readonly usersService: UsersService,
     private readonly recommendedCategoriesRepository: RecommendedCategoriesRepository,
+    private readonly activitiesRepository: ActivitiesRepository,
   ) {}
 
   async create(
@@ -50,7 +53,11 @@ export class UnitsService {
             transaction,
           );
 
-        return UnitDto.create({ ...unitAsUser, recommendedCategories });
+        return UnitDto.create({
+          ...unitAsUser,
+          recommendedCategories,
+          contributedCategories: [],
+        });
       },
     );
   }
@@ -78,7 +85,22 @@ export class UnitsService {
             transaction,
           );
 
-        return UnitDto.create({ ...unitAsUser, recommendedCategories });
+        const contributedActivities = await this.activitiesRepository.findMany(
+          ActivityFilters.parse({ unitId: unitAsUser.id }),
+          transaction,
+        );
+        const contributedCategories = contributedActivities.map(
+          ({ indicatorIndex, categoryName }) => ({
+            indicatorIndex,
+            categoryName,
+          }),
+        );
+
+        return UnitDto.create({
+          ...unitAsUser,
+          recommendedCategories,
+          contributedCategories,
+        });
       },
     );
   }
@@ -105,12 +127,67 @@ export class UnitsService {
                   transaction,
                 );
 
-              return UnitDto.create({ ...unitAsUser, recommendedCategories });
+              const contributedActivities =
+                await this.activitiesRepository.findMany(
+                  ActivityFilters.parse({ unitId: unitAsUser.id }),
+                  transaction,
+                );
+              const contributedCategories = contributedActivities.map(
+                ({ indicatorIndex, categoryName }) => ({
+                  indicatorIndex,
+                  categoryName,
+                }),
+              );
+
+              return UnitDto.create({
+                ...unitAsUser,
+                recommendedCategories,
+                contributedCategories,
+              });
             }),
           ),
         };
 
         return unitDtosPage;
+      },
+    );
+  }
+
+  async findAll(transaction?: DrizzleTransaction): Promise<UnitDto[]> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const unitsAsUsers = await this.usersService.findAll(
+          UserFiltersDto.create({ role: 'unit' }),
+          transaction,
+        );
+
+        return await Promise.all(
+          unitsAsUsers.map(async (unitAsUser) => {
+            const recommendedCategories =
+              await this.recommendedCategoriesRepository.findAll(
+                RecommendedCategoryFilters.parse({ unitId: unitAsUser.id }),
+                transaction,
+              );
+
+            const contributedActivities =
+              await this.activitiesRepository.findMany(
+                ActivityFilters.parse({ unitId: unitAsUser.id }),
+                transaction,
+              );
+            const contributedCategories = contributedActivities.map(
+              ({ indicatorIndex, categoryName }) => ({
+                indicatorIndex,
+                categoryName,
+              }),
+            );
+
+            return UnitDto.create({
+              ...unitAsUser,
+              recommendedCategories,
+              contributedCategories,
+            });
+          }),
+        );
       },
     );
   }
@@ -141,7 +218,22 @@ export class UnitsService {
             transaction,
           );
 
-        return UnitDto.create({ ...newUnit, recommendedCategories });
+        const contributedActivities = await this.activitiesRepository.findMany(
+          ActivityFilters.parse({ unitId: newUnit.id }),
+          transaction,
+        );
+        const contributedCategories = contributedActivities.map(
+          ({ indicatorIndex, categoryName }) => ({
+            indicatorIndex,
+            categoryName,
+          }),
+        );
+
+        return UnitDto.create({
+          ...newUnit,
+          recommendedCategories,
+          contributedCategories,
+        });
       },
     );
   }
@@ -162,12 +254,27 @@ export class UnitsService {
             transaction,
           );
 
+        const contributedActivities = await this.activitiesRepository.findMany(
+          ActivityFilters.parse({ unitId: unitUniqueTraitDto.id }),
+          transaction,
+        );
+        const contributedCategories = contributedActivities.map(
+          ({ indicatorIndex, categoryName }) => ({
+            indicatorIndex,
+            categoryName,
+          }),
+        );
+
         const unit = await this.usersService.delete(
           UserUniqueTraitDto.create(unitUniqueTraitDto),
           transaction,
         );
 
-        return UnitDto.create({ ...unit, recommendedCategories });
+        return UnitDto.create({
+          ...unit,
+          recommendedCategories,
+          contributedCategories,
+        });
       },
     );
   }
