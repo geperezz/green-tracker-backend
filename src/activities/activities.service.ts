@@ -24,8 +24,6 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { UploadPeriodService } from 'src/upload-period/upload-period.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Activity } from './schemas/activity.schema';
-import { activitiesTable } from './activities.table';
-import { and, between } from 'drizzle-orm';
 
 export abstract class ActivitiesServiceError extends Error {}
 export class ActivityNotFoundError extends ActivitiesServiceError {}
@@ -178,7 +176,7 @@ export class ActivitiesService {
   }
 
   async findAllCurrent(
-    filters?: ActivityFilters,
+    filters?: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<Activity[]> {
     return await (transaction ?? this.drizzleClient).transaction(
@@ -187,24 +185,17 @@ export class ActivitiesService {
           await this.uploadPeriodService.findAll(transaction);
         if (!uploadPeriod) return [];
 
-        const filteredActivitiesQuery = await transaction
-          .select()
-          .from(activitiesTable)
-          .where(
-            and(
-              this.activitiesRepository.transformFiltersToWhereConditions(
-                filters,
-              ),
-              between(
-                activitiesTable.uploadTimestamp,
-                new Date(uploadPeriod.startTimestamp),
-                new Date(uploadPeriod.endTimestamp),
-              ),
-            ),
-          );
-
-        return filteredActivitiesQuery.map((activity) =>
-          Activity.parse(activity),
+        const parsedFilters = ActivityFilters.parse(filters);
+        return await this.activitiesRepository.findMany(
+          ActivityFilters.parse({
+            ...parsedFilters,
+            uploadTimestamp: {
+              eq: parsedFilters.uploadTimestamp,
+              gte: new Date(uploadPeriod.startTimestamp),
+              lte: new Date(uploadPeriod.endTimestamp),
+            },
+          }),
+          transaction,
         );
       },
     );
