@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { ActivitiesController } from './activities.controller';
 import { ActivitiesService } from './activities.service';
@@ -8,7 +8,11 @@ import { UnitsModule } from 'src/units/units.module';
 import { UploadPeriodModule } from 'src/upload-period/upload-period.module';
 
 @Module({
-  imports: [EvidenceModule, UnitsModule, UploadPeriodModule],
+  imports: [
+    EvidenceModule,
+    forwardRef(() => UnitsModule),
+    forwardRef(() => UploadPeriodModule),
+  ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService, ActivitiesRepository],
   exports: [ActivitiesRepository],

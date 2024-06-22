@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { UnitsController } from './units.controller';
 import { UnitsService } from './units.service';
@@ -7,7 +7,11 @@ import { RecommendedCategoriesModule } from 'src/recommended-categories/recommen
 import { ActivitiesModule } from 'src/activities/activities.module';
 
 @Module({
-  imports: [UsersModule, RecommendedCategoriesModule, ActivitiesModule],
+  imports: [
+    UsersModule,
+    RecommendedCategoriesModule,
+    forwardRef(() => ActivitiesModule),
+  ],
   providers: [UnitsService],
   exports: [UnitsService],
   controllers: [UnitsController],
