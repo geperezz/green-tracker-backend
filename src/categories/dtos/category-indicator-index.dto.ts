@@ -1,13 +1,15 @@
 import { createZodDto } from 'nestjs-zod';
 
-import { categoryDtoSchema } from './category.dto';
 import { z } from 'nestjs-zod/z';
+import { indicatorSchema } from 'src/indicators/schemas/indicator.schema';
 
-export const categoryIndicatorIndexDtoSchema = categoryDtoSchema.pick({
-  indicatorIndex: true,
+export const categoryIndicatorIndexDtoSchema = z.object({
+  indicatorIndex: indicatorSchema.shape.index,
 });
 
-type InferredCategoryIndicatorIndexDto = z.infer<typeof categoryIndicatorIndexDtoSchema>;
+type InferredCategoryIndicatorIndexDto = z.infer<
+  typeof categoryIndicatorIndexDtoSchema
+>;
 
 export class CategoryIndicatorIndexDto extends createZodDto(
   categoryIndicatorIndexDtoSchema,
