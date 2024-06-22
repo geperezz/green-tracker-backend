@@ -17,6 +17,7 @@ import { IndicatorCreationDto } from './dtos/indicator-creation.dto';
 import { IndicatorCreation } from './schemas/indicator-creation.schema';
 import { IndicatorReplacementDto } from './dtos/indicator-replacement.dto';
 import { IndicatorReplacement } from './schemas/indicator-replacement.schema';
+import { CategoryIndicatorIndexDto } from 'src/categories/dtos/category-indicator-index.dto';
 
 export abstract class IndicatorsServiceError extends Error {}
 export class IndicatorNotFoundError extends IndicatorsServiceError {}
@@ -61,7 +62,10 @@ export class IndicatorsService {
         }
 
         const categories = await this.categoriesService.findManyCategories(
-          CategoryFiltersDto.create({ indicatorIndex: indicator.index }),
+          CategoryIndicatorIndexDto.create({
+            indicatorIndex: indicator.index,
+          }),
+          CategoryFiltersDto.create({}),
           transaction,
         );
 
@@ -87,9 +91,10 @@ export class IndicatorsService {
             indicatorSchemasPage.items.map(async (indicator) => {
               const categories =
                 await this.categoriesService.findManyCategories(
-                  CategoryFiltersDto.create({
+                  CategoryIndicatorIndexDto.create({
                     indicatorIndex: indicator.index,
                   }),
+                  CategoryFiltersDto.create({}),
                   transaction,
                 );
               return IndicatorDto.create({ ...indicator, categories });
@@ -111,7 +116,10 @@ export class IndicatorsService {
         return await Promise.all(
           indicatorSchemas.map(async (indicator) => {
             const categories = await this.categoriesService.findManyCategories(
-              CategoryFiltersDto.create({ indicatorIndex: indicator.index }),
+              CategoryIndicatorIndexDto.create({
+                indicatorIndex: indicator.index,
+              }),
+              CategoryFiltersDto.create({}),
               transaction,
             );
             return IndicatorDto.create({ ...indicator, categories });
@@ -136,9 +144,10 @@ export class IndicatorsService {
           );
 
           const categories = await this.categoriesService.findManyCategories(
-            CategoryFiltersDto.create({
+            CategoryIndicatorIndexDto.create({
               indicatorIndex: newIndicatorSchema.index,
             }),
+            CategoryFiltersDto.create({}),
             transaction,
           );
 
@@ -162,9 +171,10 @@ export class IndicatorsService {
       return await (transaction ?? this.drizzleClient).transaction(
         async (transaction) => {
           const categories = await this.categoriesService.findManyCategories(
-            CategoryFiltersDto.create({
+            CategoryIndicatorIndexDto.create({
               indicatorIndex: indicatorUniqueTraitDto.index,
             }),
+            CategoryFiltersDto.create({}),
             transaction,
           );
 

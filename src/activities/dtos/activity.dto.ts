@@ -5,7 +5,7 @@ import { activitySchema } from '../schemas/activity.schema';
 import { evidenceDtoSchema } from 'src/evidence/dtos/evidence.dto';
 
 export const activityDtoSchema = activitySchema.extend({
-  evidence: z.array(evidenceDtoSchema).min(1),
+  evidence: z.array(evidenceDtoSchema),
 });
 
 export class ActivityDto extends createZodDto(activityDtoSchema) {}

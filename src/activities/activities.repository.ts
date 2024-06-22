@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, between, count, eq } from 'drizzle-orm';
+import { and, between, count, eq, gte, lte } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
 import { activitiesTable } from './activities.table';
@@ -10,6 +10,7 @@ import { ActivitiesPage } from './schemas/activities-page.schema';
 import { ActivityReplacement } from './schemas/activity-replacement.schema';
 import { ActivityUniqueTrait } from './schemas/activity-unique-trait.schema';
 import { ActivityFilters } from './schemas/activity-filters.schema';
+import { PgColumn } from 'drizzle-orm/pg-core';
 
 export abstract class ActivitiesRepositoryError extends Error {}
 export class ActivityNotFoundError extends ActivitiesRepositoryError {}
@@ -98,25 +99,25 @@ export class ActivitiesRepository {
     );
   }
 
-  async findAll(
+  async findMany(
     filters?: ActivityFilters,
     transaction?: DrizzleTransaction,
   ): Promise<Activity[]> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const filteredActivitiesQuery = await transaction
+        const nonValidatedActivities = await transaction
           .select()
           .from(activitiesTable)
           .where(this.transformFiltersToWhereConditions(filters));
 
-        return filteredActivitiesQuery.map((activity) =>
+        return nonValidatedActivities.map((activity) =>
           Activity.parse(activity),
         );
       },
     );
   }
 
-  transformFiltersToWhereConditions(filters?: ActivityFilters) {
+  private transformFiltersToWhereConditions(filters?: ActivityFilters) {
     return and(
       filters?.id ? eq(activitiesTable.id, filters.id) : undefined,
       filters?.name ? eq(activitiesTable.name, filters.name) : undefined,
@@ -124,7 +125,28 @@ export class ActivitiesRepository {
         ? eq(activitiesTable.summary, filters.summary)
         : undefined,
       filters?.uploadTimestamp
-        ? eq(activitiesTable.uploadTimestamp, filters.uploadTimestamp)
+        ? 'isUsingExtendedFilters' in filters.uploadTimestamp
+          ? and(
+              filters.uploadTimestamp.eq
+                ? eq(
+                    activitiesTable.uploadTimestamp,
+                    filters.uploadTimestamp.eq,
+                  )
+                : undefined,
+              filters.uploadTimestamp.gte
+                ? gte(
+                    activitiesTable.uploadTimestamp,
+                    filters.uploadTimestamp.gte,
+                  )
+                : undefined,
+              filters.uploadTimestamp.lte
+                ? lte(
+                    activitiesTable.uploadTimestamp,
+                    filters.uploadTimestamp.lte,
+                  )
+                : undefined,
+            )
+          : eq(activitiesTable.uploadTimestamp, filters.uploadTimestamp)
         : undefined,
       filters?.unitId ? eq(activitiesTable.unitId, filters.unitId) : undefined,
       filters?.indicatorIndex

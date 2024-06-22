@@ -7,7 +7,7 @@ import { criterionDtoSchema } from 'src/criteria/dtos/criterion.dto';
 
 export const indicatorDtoSchema = indicatorSchema.extend({
   categories: z.array(
-    categoryDtoSchema.omit({ indicatorIndex: true }).extend({
+    categoryDtoSchema.extend({
       criteria: z.array(criterionDtoSchema.omit({ indicatorIndex: true })),
     }),
   ),

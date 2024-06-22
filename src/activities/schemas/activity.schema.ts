@@ -7,7 +7,7 @@ export const activitySchema = z.object({
   indicatorIndex: z.coerce.number().int().min(0),
   categoryName: z.string().trim().min(1),
   unitId: z.string().uuid(),
-  uploadTimestamp: z.coerce.date(),
+  uploadTimestamp: z.coerce.date().default(() => new Date()),
 });
 
 export const Activity = activitySchema.brand('Activity');

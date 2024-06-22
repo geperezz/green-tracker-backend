@@ -158,6 +158,7 @@ export class CategoriesService {
   }
 
   async findManyCategories(
+    indicatorIndexDto: CategoryIndicatorIndexDto,
     filters?: CategoryFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<CategoryDto[]> {
@@ -165,7 +166,7 @@ export class CategoriesService {
       async (transaction) => {
         const categorySchemas =
           await this.categoriesRepository.findManyCategories(
-            CategoryFilters.parse(filters),
+            CategoryFilters.parse({ ...filters, ...indicatorIndexDto }),
             transaction,
           );
 
@@ -205,7 +206,7 @@ export class CategoriesService {
           categoryToBeReplaced.criteria.map(async (criterion) => {
             await this.criteriaRepository.updateCriterion(
               CriterionUniqueTrait.parse({
-                indicatorIndex: categoryToBeReplaced.indicatorIndex,
+                indicatorIndex: uniqueTraitDto.indicatorIndex,
                 subindex: criterion.subindex,
               }),
               CriterionUpdate.parse({
@@ -221,7 +222,7 @@ export class CategoriesService {
             CategoryUniqueTrait.parse(uniqueTraitDto),
             CategoryReplacement.parse({
               ...replacementDataDto,
-              indicatorIndex: categoryToBeReplaced.indicatorIndex,
+              indicatorIndex: uniqueTraitDto.indicatorIndex,
             }),
             transaction,
           );
@@ -271,7 +272,7 @@ export class CategoriesService {
           categoryToDelete.criteria.map(async (criterion) => {
             await this.criteriaRepository.updateCriterion(
               CriterionUniqueTrait.parse({
-                indicatorIndex: categoryToDelete.indicatorIndex,
+                indicatorIndex: uniqueTraitDto.indicatorIndex,
                 subindex: criterion.subindex,
               }),
               CriterionUpdate.parse({
