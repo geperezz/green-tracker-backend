@@ -7,7 +7,7 @@ export const evidenceSchema = z.object({
   evidenceNumber: z.coerce.number().int().min(0),
   link: z.string().trim().min(0),
   description: z.string().trim().min(0),
-  uploadTimestamp: z.coerce.date(),
+  uploadTimestamp: z.coerce.date().default(() => new Date()),
   type: z.enum(evidenceType.enumValues),
 });
 
