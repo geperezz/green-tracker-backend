@@ -35,32 +35,95 @@ export class IndicatorsService {
     creationDataDto: IndicatorCreationDto,
     transaction?: DrizzleTransaction,
   ): Promise<IndicatorDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const indicator = await this.indicatorsRepository.create(
-          IndicatorCreation.parse(creationDataDto),
-          transaction,
-        );
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.create(creationDataDto, transaction);
+      });
+    }
 
-        return IndicatorDto.create({ ...indicator, categories: [] });
-      },
+    const indicator = await this.indicatorsRepository.create(
+      IndicatorCreation.parse(creationDataDto),
+      transaction,
     );
+
+    return IndicatorDto.create({ ...indicator, categories: [] });
   }
 
   async findOne(
     indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
     transaction?: DrizzleTransaction,
   ): Promise<IndicatorDto | null> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const indicator = await this.indicatorsRepository.findOne(
-          IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
-          transaction,
-        );
-        if (!indicator) {
-          return null;
-        }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findOne(indicatorUniqueTraitDto, transaction);
+      });
+    }
 
+    const indicator = await this.indicatorsRepository.findOne(
+      IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
+      transaction,
+    );
+    if (!indicator) {
+      return null;
+    }
+
+    const categories = await this.categoriesService.findManyCategories(
+      CategoryIndicatorIndexDto.create({
+        indicatorIndex: indicator.index,
+      }),
+      CategoryFiltersDto.create({}),
+      transaction,
+    );
+
+    return IndicatorDto.create({ ...indicator, categories });
+  }
+
+  async findPage(
+    paginationOptionsDto: PaginationOptionsDto,
+    transaction?: DrizzleTransaction,
+  ): Promise<IndicatorsPageDto> {
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findPage(paginationOptionsDto, transaction);
+      });
+    }
+
+    const indicatorSchemasPage = await this.indicatorsRepository.findPage(
+      PaginationOptions.parse(paginationOptionsDto),
+      transaction,
+    );
+
+    const indicatorDtosPage = {
+      ...indicatorSchemasPage,
+      items: await Promise.all(
+        indicatorSchemasPage.items.map(async (indicator) => {
+          const categories = await this.categoriesService.findManyCategories(
+            CategoryIndicatorIndexDto.create({
+              indicatorIndex: indicator.index,
+            }),
+            CategoryFiltersDto.create({}),
+            transaction,
+          );
+          return IndicatorDto.create({ ...indicator, categories });
+        }),
+      ),
+    };
+
+    return indicatorDtosPage;
+  }
+
+  async findAll(transaction?: DrizzleTransaction): Promise<IndicatorDto[]> {
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findAll(transaction);
+      });
+    }
+
+    const indicatorSchemas =
+      await this.indicatorsRepository.findAll(transaction);
+
+    return await Promise.all(
+      indicatorSchemas.map(async (indicator) => {
         const categories = await this.categoriesService.findManyCategories(
           CategoryIndicatorIndexDto.create({
             indicatorIndex: indicator.index,
@@ -68,64 +131,8 @@ export class IndicatorsService {
           CategoryFiltersDto.create({}),
           transaction,
         );
-
         return IndicatorDto.create({ ...indicator, categories });
-      },
-    );
-  }
-
-  async findPage(
-    paginationOptionsDto: PaginationOptionsDto,
-    transaction?: DrizzleTransaction,
-  ): Promise<IndicatorsPageDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const indicatorSchemasPage = await this.indicatorsRepository.findPage(
-          PaginationOptions.parse(paginationOptionsDto),
-          transaction,
-        );
-
-        const indicatorDtosPage = {
-          ...indicatorSchemasPage,
-          items: await Promise.all(
-            indicatorSchemasPage.items.map(async (indicator) => {
-              const categories =
-                await this.categoriesService.findManyCategories(
-                  CategoryIndicatorIndexDto.create({
-                    indicatorIndex: indicator.index,
-                  }),
-                  CategoryFiltersDto.create({}),
-                  transaction,
-                );
-              return IndicatorDto.create({ ...indicator, categories });
-            }),
-          ),
-        };
-
-        return indicatorDtosPage;
-      },
-    );
-  }
-
-  async findAll(transaction?: DrizzleTransaction): Promise<IndicatorDto[]> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const indicatorSchemas =
-          await this.indicatorsRepository.findAll(transaction);
-
-        return await Promise.all(
-          indicatorSchemas.map(async (indicator) => {
-            const categories = await this.categoriesService.findManyCategories(
-              CategoryIndicatorIndexDto.create({
-                indicatorIndex: indicator.index,
-              }),
-              CategoryFiltersDto.create({}),
-              transaction,
-            );
-            return IndicatorDto.create({ ...indicator, categories });
-          }),
-        );
-      },
+      }),
     );
   }
 
@@ -135,25 +142,31 @@ export class IndicatorsService {
     transaction?: DrizzleTransaction,
   ): Promise<IndicatorDto> {
     try {
-      return await (transaction ?? this.drizzleClient).transaction(
-        async (transaction) => {
-          const newIndicatorSchema = await this.indicatorsRepository.replace(
-            IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
-            IndicatorReplacement.parse(replacementDataDto),
+      if (transaction === undefined) {
+        return await this.drizzleClient.transaction(async (transaction) => {
+          return await this.replace(
+            indicatorUniqueTraitDto,
+            replacementDataDto,
             transaction,
           );
+        });
+      }
 
-          const categories = await this.categoriesService.findManyCategories(
-            CategoryIndicatorIndexDto.create({
-              indicatorIndex: newIndicatorSchema.index,
-            }),
-            CategoryFiltersDto.create({}),
-            transaction,
-          );
-
-          return IndicatorDto.create({ ...newIndicatorSchema, categories });
-        },
+      const newIndicatorSchema = await this.indicatorsRepository.replace(
+        IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
+        IndicatorReplacement.parse(replacementDataDto),
+        transaction,
       );
+
+      const categories = await this.categoriesService.findManyCategories(
+        CategoryIndicatorIndexDto.create({
+          indicatorIndex: newIndicatorSchema.index,
+        }),
+        CategoryFiltersDto.create({}),
+        transaction,
+      );
+
+      return IndicatorDto.create({ ...newIndicatorSchema, categories });
     } catch (error) {
       if (error instanceof IndicatorNotFoundRepositoryError) {
         throw new IndicatorNotFoundError();
@@ -168,24 +181,26 @@ export class IndicatorsService {
     transaction?: DrizzleTransaction,
   ): Promise<IndicatorDto> {
     try {
-      return await (transaction ?? this.drizzleClient).transaction(
-        async (transaction) => {
-          const categories = await this.categoriesService.findManyCategories(
-            CategoryIndicatorIndexDto.create({
-              indicatorIndex: indicatorUniqueTraitDto.index,
-            }),
-            CategoryFiltersDto.create({}),
-            transaction,
-          );
+      if (transaction === undefined) {
+        return await this.drizzleClient.transaction(async (transaction) => {
+          return await this.delete(indicatorUniqueTraitDto, transaction);
+        });
+      }
 
-          const deletedIndicatorSchema = await this.indicatorsRepository.delete(
-            IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
-            transaction,
-          );
-
-          return IndicatorDto.create({ ...deletedIndicatorSchema, categories });
-        },
+      const categories = await this.categoriesService.findManyCategories(
+        CategoryIndicatorIndexDto.create({
+          indicatorIndex: indicatorUniqueTraitDto.index,
+        }),
+        CategoryFiltersDto.create({}),
+        transaction,
       );
+
+      const deletedIndicatorSchema = await this.indicatorsRepository.delete(
+        IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
+        transaction,
+      );
+
+      return IndicatorDto.create({ ...deletedIndicatorSchema, categories });
     } catch (error) {
       if (error instanceof IndicatorNotFoundRepositoryError) {
         throw new IndicatorNotFoundError();

@@ -26,35 +26,38 @@ export class CriteriaRepository {
     creationData: CriterionCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [createdCriterion] = await transaction
-          .insert(criteriaTable)
-          .values(creationData)
-          .returning();
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.createCriterion(creationData, transaction);
+      });
+    }
 
-        return Criterion.parse(createdCriterion);
-      },
-    );
+    const [createdCriterion] = await transaction
+      .insert(criteriaTable)
+      .values(creationData)
+      .returning();
+
+    return Criterion.parse(createdCriterion);
   }
 
   async findCriterion(
     uniqueTrait: CriterionUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion | null> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [foundCriterion = null] = await transaction
-          .select()
-          .from(criteriaTable)
-          .where(this.transformUniqueTraitToWhereConditions(uniqueTrait));
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findCriterion(uniqueTrait, transaction);
+      });
+    }
+    const [foundCriterion = null] = await transaction
+      .select()
+      .from(criteriaTable)
+      .where(this.transformUniqueTraitToWhereConditions(uniqueTrait));
 
-        if (!foundCriterion) {
-          return null;
-        }
-        return Criterion.parse(foundCriterion);
-      },
-    );
+    if (!foundCriterion) {
+      return null;
+    }
+    return Criterion.parse(foundCriterion);
   }
 
   async findCriteriaPage(
@@ -62,57 +65,63 @@ export class CriteriaRepository {
     filters?: CriterionFilters,
     transaction?: DrizzleTransaction,
   ): Promise<CriteriaPage> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const filteredCriteriaQuery = transaction
-          .select()
-          .from(criteriaTable)
-          .where(this.transformFiltersToWhereConditions(filters))
-          .as('filtered_criteria');
-
-        const nonValidatedCriteriaPage = await transaction
-          .select()
-          .from(filteredCriteriaQuery)
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
-          );
-        const criteriaPage = nonValidatedCriteriaPage.map((criterion) =>
-          Criterion.parse(criterion),
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findCriteriaPage(
+          paginationOptions,
+          filters,
+          transaction,
         );
+      });
+    }
 
-        const [{ criteriaCount }] = await transaction
-          .select({
-            criteriaCount: count(),
-          })
-          .from(filteredCriteriaQuery);
+    const filteredCriteriaQuery = transaction
+      .select()
+      .from(criteriaTable)
+      .where(this.transformFiltersToWhereConditions(filters))
+      .as('filtered_criteria');
 
-        return CriteriaPage.parse({
-          items: criteriaPage,
-          ...paginationOptions,
-          pageCount: Math.ceil(criteriaCount / paginationOptions.itemsPerPage),
-          itemCount: criteriaCount,
-        });
-      },
+    const nonValidatedCriteriaPage = await transaction
+      .select()
+      .from(filteredCriteriaQuery)
+      .limit(paginationOptions.itemsPerPage)
+      .offset(
+        paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+      );
+    const criteriaPage = nonValidatedCriteriaPage.map((criterion) =>
+      Criterion.parse(criterion),
     );
+
+    const [{ criteriaCount }] = await transaction
+      .select({
+        criteriaCount: count(),
+      })
+      .from(filteredCriteriaQuery);
+
+    return CriteriaPage.parse({
+      items: criteriaPage,
+      ...paginationOptions,
+      pageCount: Math.ceil(criteriaCount / paginationOptions.itemsPerPage),
+      itemCount: criteriaCount,
+    });
   }
 
   async findManyCriteria(
     filters?: CriterionFilters,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion[]> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const nonValidatedEvidence = await transaction
-          .select()
-          .from(criteriaTable)
-          .where(this.transformFiltersToWhereConditions(filters));
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findManyCriteria(filters, transaction);
+      });
+    }
 
-        return nonValidatedEvidence.map((criterion) =>
-          Criterion.parse(criterion),
-        );
-      },
-    );
+    const nonValidatedEvidence = await transaction
+      .select()
+      .from(criteriaTable)
+      .where(this.transformFiltersToWhereConditions(filters));
+
+    return nonValidatedEvidence.map((criterion) => Criterion.parse(criterion));
   }
 
   private transformFiltersToWhereConditions(
@@ -142,20 +151,22 @@ export class CriteriaRepository {
     updateData: CriterionUpdate,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [updatedCriterion = null] = await transaction
-          .update(criteriaTable)
-          .set(updateData)
-          .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
-          .returning();
-        if (!updatedCriterion) {
-          throw new CriterionNotFoundError();
-        }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.updateCriterion(uniqueTrait, updateData, transaction);
+      });
+    }
 
-        return Criterion.parse(updatedCriterion);
-      },
-    );
+    const [updatedCriterion = null] = await transaction
+      .update(criteriaTable)
+      .set(updateData)
+      .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
+      .returning();
+    if (!updatedCriterion) {
+      throw new CriterionNotFoundError();
+    }
+
+    return Criterion.parse(updatedCriterion);
   }
 
   async replaceCriterion(
@@ -174,19 +185,21 @@ export class CriteriaRepository {
     uniqueTrait: CriterionUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [deletedCriterion = null] = await transaction
-          .delete(criteriaTable)
-          .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
-          .returning();
-        if (!deletedCriterion) {
-          throw new CriterionNotFoundError();
-        }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.deleteCriterion(uniqueTrait, transaction);
+      });
+    }
 
-        return Criterion.parse(deletedCriterion);
-      },
-    );
+    const [deletedCriterion = null] = await transaction
+      .delete(criteriaTable)
+      .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
+      .returning();
+    if (!deletedCriterion) {
+      throw new CriterionNotFoundError();
+    }
+
+    return Criterion.parse(deletedCriterion);
   }
 
   private transformUniqueTraitToWhereConditions(

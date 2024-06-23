@@ -25,35 +25,39 @@ export class CategoriesRepository {
     creationData: CategoryCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Category> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [createdCategory] = await transaction
-          .insert(categoriesTable)
-          .values(creationData)
-          .returning();
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.createCategory(creationData, transaction);
+      });
+    }
 
-        return Category.parse(createdCategory);
-      },
-    );
+    const [createdCategory] = await transaction
+      .insert(categoriesTable)
+      .values(creationData)
+      .returning();
+
+    return Category.parse(createdCategory);
   }
 
   async findCategory(
     uniqueTrait: CategoryUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Category | null> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [foundCategory = null] = await transaction
-          .select()
-          .from(categoriesTable)
-          .where(this.transformUniqueTraitToWhereConditions(uniqueTrait));
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findCategory(uniqueTrait, transaction);
+      });
+    }
 
-        if (!foundCategory) {
-          return null;
-        }
-        return Category.parse(foundCategory);
-      },
-    );
+    const [foundCategory = null] = await transaction
+      .select()
+      .from(categoriesTable)
+      .where(this.transformUniqueTraitToWhereConditions(uniqueTrait));
+
+    if (!foundCategory) {
+      return null;
+    }
+    return Category.parse(foundCategory);
   }
 
   async findCategoriesPage(
@@ -61,59 +65,63 @@ export class CategoriesRepository {
     filters?: CategoryFilters,
     transaction?: DrizzleTransaction,
   ): Promise<CategoriesPage> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const filteredCategoriesQuery = transaction
-          .select()
-          .from(categoriesTable)
-          .where(this.transformFiltersToWhereConditions(filters))
-          .as('filtered_categories');
-
-        const nonValidatedCategoriesPage = await transaction
-          .select()
-          .from(filteredCategoriesQuery)
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
-          );
-        const categoriesPage = nonValidatedCategoriesPage.map((category) =>
-          Category.parse(category),
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findCategoriesPage(
+          paginationOptions,
+          filters,
+          transaction,
         );
+      });
+    }
 
-        const [{ categoriesCount }] = await transaction
-          .select({
-            categoriesCount: count(filteredCategoriesQuery.indicatorIndex),
-          })
-          .from(filteredCategoriesQuery);
+    const filteredCategoriesQuery = transaction
+      .select()
+      .from(categoriesTable)
+      .where(this.transformFiltersToWhereConditions(filters))
+      .as('filtered_categories');
 
-        return CategoriesPage.parse({
-          items: categoriesPage,
-          ...paginationOptions,
-          pageCount: Math.ceil(
-            categoriesCount / paginationOptions.itemsPerPage,
-          ),
-          itemCount: categoriesCount,
-        });
-      },
+    const nonValidatedCategoriesPage = await transaction
+      .select()
+      .from(filteredCategoriesQuery)
+      .limit(paginationOptions.itemsPerPage)
+      .offset(
+        paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+      );
+    const categoriesPage = nonValidatedCategoriesPage.map((category) =>
+      Category.parse(category),
     );
+
+    const [{ categoriesCount }] = await transaction
+      .select({
+        categoriesCount: count(filteredCategoriesQuery.indicatorIndex),
+      })
+      .from(filteredCategoriesQuery);
+
+    return CategoriesPage.parse({
+      items: categoriesPage,
+      ...paginationOptions,
+      pageCount: Math.ceil(categoriesCount / paginationOptions.itemsPerPage),
+      itemCount: categoriesCount,
+    });
   }
 
   async findManyCategories(
     filters?: CategoryFilters,
     transaction?: DrizzleTransaction,
   ): Promise<Category[]> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const nonValidatedCategories = await transaction
-          .select()
-          .from(categoriesTable)
-          .where(this.transformFiltersToWhereConditions(filters));
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findManyCategories(filters, transaction);
+      });
+    }
 
-        return nonValidatedCategories.map((category) =>
-          Category.parse(category),
-        );
-      },
-    );
+    const nonValidatedCategories = await transaction
+      .select()
+      .from(categoriesTable)
+      .where(this.transformFiltersToWhereConditions(filters));
+
+    return nonValidatedCategories.map((category) => Category.parse(category));
   }
 
   private transformFiltersToWhereConditions(
@@ -132,39 +140,47 @@ export class CategoriesRepository {
     replacementData: CategoryReplacement,
     transaction?: DrizzleTransaction,
   ): Promise<Category> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [replacedCategory = null] = await transaction
-          .update(categoriesTable)
-          .set(replacementData)
-          .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
-          .returning();
-        if (!replacedCategory) {
-          throw new CategoryNotFoundError();
-        }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.replaceCategory(
+          uniqueTrait,
+          replacementData,
+          transaction,
+        );
+      });
+    }
 
-        return Category.parse(replacedCategory);
-      },
-    );
+    const [replacedCategory = null] = await transaction
+      .update(categoriesTable)
+      .set(replacementData)
+      .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
+      .returning();
+    if (!replacedCategory) {
+      throw new CategoryNotFoundError();
+    }
+
+    return Category.parse(replacedCategory);
   }
 
   async deleteCategory(
     uniqueTrait: CategoryUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Category> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [deletedCategory = null] = await transaction
-          .delete(categoriesTable)
-          .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
-          .returning();
-        if (!deletedCategory) {
-          throw new CategoryNotFoundError();
-        }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.deleteCategory(uniqueTrait, transaction);
+      });
+    }
 
-        return Category.parse(deletedCategory);
-      },
-    );
+    const [deletedCategory = null] = await transaction
+      .delete(categoriesTable)
+      .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
+      .returning();
+    if (!deletedCategory) {
+      throw new CategoryNotFoundError();
+    }
+
+    return Category.parse(deletedCategory);
   }
 
   private transformUniqueTraitToWhereConditions(

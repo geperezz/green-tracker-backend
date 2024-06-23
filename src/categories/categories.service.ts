@@ -44,77 +44,83 @@ export class CategoriesService {
     creationDataDto: CategoryCreationDto,
     transaction?: DrizzleTransaction,
   ): Promise<CategoryDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const createdCategorySchema =
-          await this.categoriesRepository.createCategory(
-            CategoryCreation.parse({
-              ...indicatorIndexDto,
-              ...creationDataDto,
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.createCategory(
+          indicatorIndexDto,
+          creationDataDto,
+          transaction,
+        );
+      });
+    }
+
+    const createdCategorySchema =
+      await this.categoriesRepository.createCategory(
+        CategoryCreation.parse({
+          ...indicatorIndexDto,
+          ...creationDataDto,
+        }),
+        transaction,
+      );
+
+    const updatedCriteriaSchema = await Promise.all(
+      creationDataDto.criteria.map(async ({ subindex }) => {
+        try {
+          return await this.criteriaRepository.updateCriterion(
+            CriterionUniqueTrait.parse({
+              indicatorIndex: createdCategorySchema.indicatorIndex,
+              subindex,
+            }),
+            CriterionUpdate.parse({
+              categoryName: createdCategorySchema.name,
             }),
             transaction,
           );
-
-        const updatedCriteriaSchema = await Promise.all(
-          creationDataDto.criteria.map(async ({ subindex }) => {
-            try {
-              return await this.criteriaRepository.updateCriterion(
-                CriterionUniqueTrait.parse({
-                  indicatorIndex: createdCategorySchema.indicatorIndex,
-                  subindex,
-                }),
-                CriterionUpdate.parse({
-                  categoryName: createdCategorySchema.name,
-                }),
-                transaction,
-              );
-            } catch (error) {
-              if (error instanceof CriterionNotFoundRepositoryError) {
-                throw new CriterionNotFoundError(subindex);
-              }
-              throw error;
-            }
-          }),
-        );
-
-        return CategoryDto.create({
-          ...createdCategorySchema,
-          criteria: updatedCriteriaSchema,
-        });
-      },
+        } catch (error) {
+          if (error instanceof CriterionNotFoundRepositoryError) {
+            throw new CriterionNotFoundError(subindex);
+          }
+          throw error;
+        }
+      }),
     );
+
+    return CategoryDto.create({
+      ...createdCategorySchema,
+      criteria: updatedCriteriaSchema,
+    });
   }
 
   async findCategory(
     uniqueTraitDto: CategoryUniqueTraitDto,
     transaction?: DrizzleTransaction,
   ): Promise<CategoryDto | null> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const foundCategorySchema =
-          await this.categoriesRepository.findCategory(
-            CategoryUniqueTrait.parse(uniqueTraitDto),
-            transaction,
-          );
-        if (!foundCategorySchema) {
-          return null;
-        }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findCategory(uniqueTraitDto, transaction);
+      });
+    }
 
-        const foundCriteriaSchema =
-          await this.criteriaRepository.findManyCriteria(
-            CriterionFilters.parse({
-              indicatorIndex: foundCategorySchema.indicatorIndex,
-              categoryName: foundCategorySchema.name,
-            }),
-            transaction,
-          );
-
-        return CategoryDto.create({
-          ...foundCategorySchema,
-          criteria: foundCriteriaSchema,
-        });
-      },
+    const foundCategorySchema = await this.categoriesRepository.findCategory(
+      CategoryUniqueTrait.parse(uniqueTraitDto),
+      transaction,
     );
+    if (!foundCategorySchema) {
+      return null;
+    }
+
+    const foundCriteriaSchema = await this.criteriaRepository.findManyCriteria(
+      CriterionFilters.parse({
+        indicatorIndex: foundCategorySchema.indicatorIndex,
+        categoryName: foundCategorySchema.name,
+      }),
+      transaction,
+    );
+
+    return CategoryDto.create({
+      ...foundCategorySchema,
+      criteria: foundCriteriaSchema,
+    });
   }
 
   async findCategoriesPage(
@@ -123,38 +129,44 @@ export class CategoriesService {
     filters?: CategoryFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<CategoriesPageDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const categorySchemasPage =
-          await this.categoriesRepository.findCategoriesPage(
-            PaginationOptions.parse(paginationOptionsDto),
-            CategoryFilters.parse({ ...filters, ...indicatorIndexDto }),
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findCategoriesPage(
+          indicatorIndexDto,
+          paginationOptionsDto,
+          filters,
+          transaction,
+        );
+      });
+    }
+
+    const categorySchemasPage =
+      await this.categoriesRepository.findCategoriesPage(
+        PaginationOptions.parse(paginationOptionsDto),
+        CategoryFilters.parse({ ...filters, ...indicatorIndexDto }),
+        transaction,
+      );
+
+    const categoryDtosPage = {
+      ...categorySchemasPage,
+      items: await Promise.all(
+        categorySchemasPage.items.map(async (categorySchema) => {
+          const foundCriteria = await this.criteriaRepository.findManyCriteria(
+            CriterionFilters.parse({
+              indicatorIndex: categorySchema.indicatorIndex,
+              categoryName: categorySchema.name,
+            }),
             transaction,
           );
+          return CategoryDto.create({
+            ...categorySchema,
+            criteria: foundCriteria,
+          });
+        }),
+      ),
+    };
 
-        const categoryDtosPage = {
-          ...categorySchemasPage,
-          items: await Promise.all(
-            categorySchemasPage.items.map(async (categorySchema) => {
-              const foundCriteria =
-                await this.criteriaRepository.findManyCriteria(
-                  CriterionFilters.parse({
-                    indicatorIndex: categorySchema.indicatorIndex,
-                    categoryName: categorySchema.name,
-                  }),
-                  transaction,
-                );
-              return CategoryDto.create({
-                ...categorySchema,
-                criteria: foundCriteria,
-              });
-            }),
-          ),
-        };
-
-        return categoryDtosPage;
-      },
-    );
+    return categoryDtosPage;
   }
 
   async findManyCategories(
@@ -162,28 +174,32 @@ export class CategoriesService {
     filters?: CategoryFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<CategoryDto[]> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const categorySchemas =
-          await this.categoriesRepository.findManyCategories(
-            CategoryFilters.parse({ ...filters, ...indicatorIndexDto }),
-            transaction,
-          );
-
-        return await Promise.all(
-          categorySchemas.map(async (category) => {
-            const foundCriteria =
-              await this.criteriaRepository.findManyCriteria(
-                CriterionFilters.parse({
-                  indicatorIndex: category.indicatorIndex,
-                  categoryName: category.name,
-                }),
-                transaction,
-              );
-            return CategoryDto.create({ ...category, criteria: foundCriteria });
-          }),
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findManyCategories(
+          indicatorIndexDto,
+          filters,
+          transaction,
         );
-      },
+      });
+    }
+
+    const categorySchemas = await this.categoriesRepository.findManyCategories(
+      CategoryFilters.parse({ ...filters, ...indicatorIndexDto }),
+      transaction,
+    );
+
+    return await Promise.all(
+      categorySchemas.map(async (category) => {
+        const foundCriteria = await this.criteriaRepository.findManyCriteria(
+          CriterionFilters.parse({
+            indicatorIndex: category.indicatorIndex,
+            categoryName: category.name,
+          }),
+          transaction,
+        );
+        return CategoryDto.create({ ...category, criteria: foundCriteria });
+      }),
     );
   }
 
@@ -192,104 +208,111 @@ export class CategoriesService {
     replacementDataDto: CategoryReplacementDto,
     transaction?: DrizzleTransaction,
   ): Promise<CategoryDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const categoryToBeReplaced = await this.findCategory(
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.replaceCategory(
           uniqueTraitDto,
+          replacementDataDto,
           transaction,
         );
-        if (!categoryToBeReplaced) {
-          throw new CategoryNotFoundError();
-        }
+      });
+    }
 
-        await Promise.all(
-          categoryToBeReplaced.criteria.map(async (criterion) => {
-            await this.criteriaRepository.updateCriterion(
-              CriterionUniqueTrait.parse({
-                indicatorIndex: uniqueTraitDto.indicatorIndex,
-                subindex: criterion.subindex,
-              }),
-              CriterionUpdate.parse({
-                categoryName: null,
-              }),
-              transaction,
-            );
+    const categoryToBeReplaced = await this.findCategory(
+      uniqueTraitDto,
+      transaction,
+    );
+    if (!categoryToBeReplaced) {
+      throw new CategoryNotFoundError();
+    }
+
+    await Promise.all(
+      categoryToBeReplaced.criteria.map(async (criterion) => {
+        await this.criteriaRepository.updateCriterion(
+          CriterionUniqueTrait.parse({
+            indicatorIndex: uniqueTraitDto.indicatorIndex,
+            subindex: criterion.subindex,
           }),
+          CriterionUpdate.parse({
+            categoryName: null,
+          }),
+          transaction,
         );
+      }),
+    );
 
-        const newCategorySchema =
-          await this.categoriesRepository.replaceCategory(
-            CategoryUniqueTrait.parse(uniqueTraitDto),
-            CategoryReplacement.parse({
-              ...replacementDataDto,
-              indicatorIndex: uniqueTraitDto.indicatorIndex,
+    const newCategorySchema = await this.categoriesRepository.replaceCategory(
+      CategoryUniqueTrait.parse(uniqueTraitDto),
+      CategoryReplacement.parse({
+        ...replacementDataDto,
+        indicatorIndex: uniqueTraitDto.indicatorIndex,
+      }),
+      transaction,
+    );
+
+    const newCriteriaSchemas = await Promise.all(
+      replacementDataDto.criteria.map(async ({ subindex }) => {
+        try {
+          return await this.criteriaRepository.updateCriterion(
+            CriterionUniqueTrait.parse({
+              indicatorIndex: newCategorySchema.indicatorIndex,
+              subindex,
+            }),
+            CriterionUpdate.parse({
+              categoryName: newCategorySchema.name,
             }),
             transaction,
           );
-
-        const newCriteriaSchemas = await Promise.all(
-          replacementDataDto.criteria.map(async ({ subindex }) => {
-            try {
-              return await this.criteriaRepository.updateCriterion(
-                CriterionUniqueTrait.parse({
-                  indicatorIndex: newCategorySchema.indicatorIndex,
-                  subindex,
-                }),
-                CriterionUpdate.parse({
-                  categoryName: newCategorySchema.name,
-                }),
-                transaction,
-              );
-            } catch (error) {
-              throw new CriterionNotFoundError(subindex);
-            }
-          }),
-        );
-
-        return CategoryDto.create({
-          ...newCategorySchema,
-          criteria: newCriteriaSchemas,
-        });
-      },
+        } catch (error) {
+          throw new CriterionNotFoundError(subindex);
+        }
+      }),
     );
+
+    return CategoryDto.create({
+      ...newCategorySchema,
+      criteria: newCriteriaSchemas,
+    });
   }
 
   async deleteCategory(
     uniqueTraitDto: CategoryUniqueTraitDto,
     transaction?: DrizzleTransaction,
   ): Promise<CategoryDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const categoryToDelete = await this.findCategory(
-          uniqueTraitDto,
-          transaction,
-        );
-        if (!categoryToDelete) {
-          throw new CategoryNotFoundError();
-        }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.deleteCategory(uniqueTraitDto, transaction);
+      });
+    }
 
-        await Promise.all(
-          categoryToDelete.criteria.map(async (criterion) => {
-            await this.criteriaRepository.updateCriterion(
-              CriterionUniqueTrait.parse({
-                indicatorIndex: uniqueTraitDto.indicatorIndex,
-                subindex: criterion.subindex,
-              }),
-              CriterionUpdate.parse({
-                categoryName: null,
-              }),
-              transaction,
-            );
-          }),
-        );
-
-        await this.categoriesRepository.deleteCategory(
-          CategoryUniqueTrait.parse(uniqueTraitDto),
-          transaction,
-        );
-
-        return categoryToDelete;
-      },
+    const categoryToDelete = await this.findCategory(
+      uniqueTraitDto,
+      transaction,
     );
+    if (!categoryToDelete) {
+      throw new CategoryNotFoundError();
+    }
+
+    await Promise.all(
+      categoryToDelete.criteria.map(async (criterion) => {
+        await this.criteriaRepository.updateCriterion(
+          CriterionUniqueTrait.parse({
+            indicatorIndex: uniqueTraitDto.indicatorIndex,
+            subindex: criterion.subindex,
+          }),
+          CriterionUpdate.parse({
+            categoryName: null,
+          }),
+          transaction,
+        );
+      }),
+    );
+
+    await this.categoriesRepository.deleteCategory(
+      CategoryUniqueTrait.parse(uniqueTraitDto),
+      transaction,
+    );
+
+    return categoryToDelete;
   }
 }

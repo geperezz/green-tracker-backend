@@ -24,88 +24,94 @@ export class IndicatorsRepository {
     creationData: IndicatorCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Indicator> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [createdIndicator] = await transaction
-          .insert(indicatorsTable)
-          .values(creationData)
-          .returning();
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.create(creationData, transaction);
+      });
+    }
 
-        return Indicator.parse(createdIndicator);
-      },
-    );
+    const [createdIndicator] = await transaction
+      .insert(indicatorsTable)
+      .values(creationData)
+      .returning();
+
+    return Indicator.parse(createdIndicator);
   }
 
   async findOne(
     indicatorUniqueTrait: IndicatorUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Indicator | null> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [foundIndicator = null] = await transaction
-          .select()
-          .from(indicatorsTable)
-          .where(eq(indicatorsTable.index, indicatorUniqueTrait.index));
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findOne(indicatorUniqueTrait, transaction);
+      });
+    }
 
-        if (!foundIndicator) {
-          return null;
-        }
-        return Indicator.parse(foundIndicator);
-      },
-    );
+    const [foundIndicator = null] = await transaction
+      .select()
+      .from(indicatorsTable)
+      .where(eq(indicatorsTable.index, indicatorUniqueTrait.index));
+
+    if (!foundIndicator) {
+      return null;
+    }
+    return Indicator.parse(foundIndicator);
   }
 
   async findPage(
     paginationOptions: PaginationOptions,
     transaction?: DrizzleTransaction,
   ): Promise<IndicatorsPage> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const indicatorsQuery = transaction
-          .select()
-          .from(indicatorsTable)
-          .as('indicators');
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findPage(paginationOptions, transaction);
+      });
+    }
 
-        const nonValidatedIndicatorsPage = await transaction
-          .select()
-          .from(indicatorsQuery)
-          .limit(paginationOptions.itemsPerPage)
-          .offset(
-            paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
-          );
-        const indicatorsPage = nonValidatedIndicatorsPage.map((indicator) =>
-          Indicator.parse(indicator),
-        );
+    const indicatorsQuery = transaction
+      .select()
+      .from(indicatorsTable)
+      .as('indicators');
 
-        const [{ indicatorsCount }] = await transaction
-          .select({
-            indicatorsCount: count(indicatorsQuery.index),
-          })
-          .from(indicatorsQuery);
-
-        return IndicatorsPage.parse({
-          items: indicatorsPage,
-          ...paginationOptions,
-          pageCount: Math.ceil(
-            indicatorsCount / paginationOptions.itemsPerPage,
-          ),
-          itemCount: indicatorsCount,
-        });
-      },
+    const nonValidatedIndicatorsPage = await transaction
+      .select()
+      .from(indicatorsQuery)
+      .limit(paginationOptions.itemsPerPage)
+      .offset(
+        paginationOptions.itemsPerPage * (paginationOptions.pageIndex - 1),
+      );
+    const indicatorsPage = nonValidatedIndicatorsPage.map((indicator) =>
+      Indicator.parse(indicator),
     );
+
+    const [{ indicatorsCount }] = await transaction
+      .select({
+        indicatorsCount: count(indicatorsQuery.index),
+      })
+      .from(indicatorsQuery);
+
+    return IndicatorsPage.parse({
+      items: indicatorsPage,
+      ...paginationOptions,
+      pageCount: Math.ceil(indicatorsCount / paginationOptions.itemsPerPage),
+      itemCount: indicatorsCount,
+    });
   }
 
   async findAll(transaction?: DrizzleTransaction): Promise<Indicator[]> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const nonValidatedIndicators = await transaction
-          .select()
-          .from(indicatorsTable);
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findAll(transaction);
+      });
+    }
 
-        return nonValidatedIndicators.map((indicator) =>
-          Indicator.parse(indicator),
-        );
-      },
+    const nonValidatedIndicators = await transaction
+      .select()
+      .from(indicatorsTable);
+
+    return nonValidatedIndicators.map((indicator) =>
+      Indicator.parse(indicator),
     );
   }
 
@@ -114,38 +120,46 @@ export class IndicatorsRepository {
     replacementData: IndicatorReplacement,
     transaction?: DrizzleTransaction,
   ): Promise<Indicator> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [replacedIndicator = null] = await transaction
-          .update(indicatorsTable)
-          .set(replacementData)
-          .where(eq(indicatorsTable.index, indicatorUniqueTrait.index))
-          .returning();
-        if (!replacedIndicator) {
-          throw new IndicatorNotFoundError();
-        }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.replace(
+          indicatorUniqueTrait,
+          replacementData,
+          transaction,
+        );
+      });
+    }
 
-        return Indicator.parse(replacedIndicator);
-      },
-    );
+    const [replacedIndicator = null] = await transaction
+      .update(indicatorsTable)
+      .set(replacementData)
+      .where(eq(indicatorsTable.index, indicatorUniqueTrait.index))
+      .returning();
+    if (!replacedIndicator) {
+      throw new IndicatorNotFoundError();
+    }
+
+    return Indicator.parse(replacedIndicator);
   }
 
   async delete(
     indicatorUniqueTrait: IndicatorUniqueTrait,
     transaction?: DrizzleTransaction,
   ): Promise<Indicator> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [deletedIndicator = null] = await transaction
-          .delete(indicatorsTable)
-          .where(eq(indicatorsTable.index, indicatorUniqueTrait.index))
-          .returning();
-        if (!deletedIndicator) {
-          throw new IndicatorNotFoundError();
-        }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.delete(indicatorUniqueTrait, transaction);
+      });
+    }
 
-        return Indicator.parse(deletedIndicator);
-      },
-    );
+    const [deletedIndicator = null] = await transaction
+      .delete(indicatorsTable)
+      .where(eq(indicatorsTable.index, indicatorUniqueTrait.index))
+      .returning();
+    if (!deletedIndicator) {
+      throw new IndicatorNotFoundError();
+    }
+
+    return Indicator.parse(deletedIndicator);
   }
 }
