@@ -105,7 +105,10 @@ export class CriteriaController {
     try {
       const newCriterionSchema = await this.criteriaRepository.replaceCriterion(
         CriterionUniqueTrait.parse(uniqueTraitDto),
-        CriterionReplacement.parse(replacementDataDto),
+        CriterionReplacement.parse({
+          ...replacementDataDto,
+          indicatorIndex: uniqueTraitDto.indicatorIndex,
+        }),
       );
 
       return CriterionDto.create(newCriterionSchema);
