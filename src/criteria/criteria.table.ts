@@ -13,10 +13,12 @@ import { indicatorsTable } from 'src/indicators/indicators.table';
 export const criteriaTable = pgTable(
   'criteria',
   {
-    indicatorIndex: integer('index').references(() => indicatorsTable.index, {
-      onUpdate: 'cascade',
-      onDelete: 'cascade',
-    }),
+    indicatorIndex: integer('index')
+      .notNull()
+      .references(() => indicatorsTable.index, {
+        onUpdate: 'cascade',
+        onDelete: 'cascade',
+      }),
     subindex: integer('subindex').notNull().unique(),
     englishName: text('english_name').notNull().unique(),
     spanishAlias: text('spanish_alias').notNull().unique(),
