@@ -42,7 +42,6 @@ export class ActivitiesController {
     @Param()
     activityUniqueTraitDto: ActivityUniqueTraitDto,
   ): Promise<ActivityDto> {
-    console.log(activityUniqueTraitDto);
     const activity = await this.activitiesService.findOne(
       activityUniqueTraitDto,
     );
