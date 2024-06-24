@@ -40,6 +40,7 @@ export class ActivitiesRepository {
 
   async findOne(
     activityUniqueTrait: ActivityUniqueTrait,
+    filters?: ActivityFilters,
     transaction?: DrizzleTransaction,
   ): Promise<Activity | null> {
     return await (transaction ?? this.drizzleClient).transaction(
@@ -47,7 +48,12 @@ export class ActivitiesRepository {
         const [foundActivity = null] = await transaction
           .select()
           .from(activitiesTable)
-          .where(eq(activitiesTable.id, activityUniqueTrait.id));
+          .where(
+            and(
+              eq(activitiesTable.id, activityUniqueTrait.id),
+              this.transformFiltersToWhereConditions(filters),
+            ),
+          );
 
         if (!foundActivity) {
           return null;
@@ -117,6 +123,52 @@ export class ActivitiesRepository {
     );
   }
 
+  async replace(
+    activityUniqueTrait: ActivityUniqueTrait,
+    replacementData: ActivityReplacement,
+    transaction?: DrizzleTransaction,
+  ): Promise<Activity> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const [replacedActivity = null] = await transaction
+          .update(activitiesTable)
+          .set(replacementData)
+          .where(eq(activitiesTable.id, activityUniqueTrait.id))
+          .returning();
+        if (!replacedActivity) {
+          throw new ActivityNotFoundError();
+        }
+
+        return Activity.parse(replacedActivity);
+      },
+    );
+  }
+
+  async delete(
+    activityUniqueTrait: ActivityUniqueTrait,
+    filters?: ActivityFilters,
+    transaction?: DrizzleTransaction,
+  ): Promise<Activity> {
+    return await (transaction ?? this.drizzleClient).transaction(
+      async (transaction) => {
+        const [deletedActivity = null] = await transaction
+          .delete(activitiesTable)
+          .where(
+            and(
+              eq(activitiesTable.id, activityUniqueTrait.id),
+              this.transformFiltersToWhereConditions(filters),
+            ),
+          )
+          .returning();
+        if (!deletedActivity) {
+          throw new ActivityNotFoundError();
+        }
+
+        return Activity.parse(deletedActivity);
+      },
+    );
+  }
+
   private transformFiltersToWhereConditions(filters?: ActivityFilters) {
     return and(
       filters?.id ? eq(activitiesTable.id, filters.id) : undefined,
@@ -155,46 +207,6 @@ export class ActivitiesRepository {
       filters?.categoryName
         ? eq(activitiesTable.categoryName, filters.categoryName)
         : undefined,
-    );
-  }
-
-  async replace(
-    activityUniqueTrait: ActivityUniqueTrait,
-    replacementData: ActivityReplacement,
-    transaction?: DrizzleTransaction,
-  ): Promise<Activity> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [replacedActivity = null] = await transaction
-          .update(activitiesTable)
-          .set(replacementData)
-          .where(eq(activitiesTable.id, activityUniqueTrait.id))
-          .returning();
-        if (!replacedActivity) {
-          throw new ActivityNotFoundError();
-        }
-
-        return Activity.parse(replacedActivity);
-      },
-    );
-  }
-
-  async delete(
-    activityUniqueTrait: ActivityUniqueTrait,
-    transaction?: DrizzleTransaction,
-  ): Promise<Activity> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [deletedActivity = null] = await transaction
-          .delete(activitiesTable)
-          .where(eq(activitiesTable.id, activityUniqueTrait.id))
-          .returning();
-        if (!deletedActivity) {
-          throw new ActivityNotFoundError();
-        }
-
-        return Activity.parse(deletedActivity);
-      },
     );
   }
 }

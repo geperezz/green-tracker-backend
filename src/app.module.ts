@@ -19,6 +19,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { UploadPeriodModule } from './upload-period/upload-period.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { join } from 'path';
+import { UnitsActivitiesModule } from './units-activities/units-activities.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { join } from 'path';
     UsersModule,
     AdminsModule,
     UnitsModule,
+    UnitsActivitiesModule,
     IndicatorsModule,
     CriteriaModule,
     CategoriesModule,

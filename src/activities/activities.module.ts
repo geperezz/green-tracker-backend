@@ -15,6 +15,6 @@ import { UploadPeriodModule } from 'src/upload-period/upload-period.module';
   ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService, ActivitiesRepository],
-  exports: [ActivitiesRepository],
+  exports: [ActivitiesService, ActivitiesRepository],
 })
 export class ActivitiesModule {}

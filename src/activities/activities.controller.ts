@@ -37,7 +37,6 @@ export class ActivitiesController {
   }
 
   @Get('/:id/')
-  @LoggedInAs('unit')
   async findOne(
     @Param()
     activityUniqueTraitDto: ActivityUniqueTraitDto,
@@ -57,7 +56,6 @@ export class ActivitiesController {
   }
 
   @Get()
-  @LoggedInAs('unit')
   async findPage(
     @Query()
     paginationOptionsDto: PaginationOptionsDto,

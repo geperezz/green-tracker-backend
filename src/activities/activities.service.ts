@@ -58,12 +58,14 @@ export class ActivitiesService {
 
   async findOne(
     activityUniqueTraitDto: ActivityUniqueTraitDto,
+    filters?: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<ActivityDto | null> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
         const activity = await this.activitiesRepository.findOne(
           ActivityUniqueTrait.parse(activityUniqueTraitDto),
+          ActivityFilters.parse(filters),
           transaction,
         );
         if (!activity) {
@@ -147,6 +149,7 @@ export class ActivitiesService {
 
   async delete(
     activityUniqueTraitDto: ActivityUniqueTraitDto,
+    filters?: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<ActivityDto> {
     return await (transaction ?? this.drizzleClient).transaction(
@@ -161,6 +164,7 @@ export class ActivitiesService {
 
           const activity = await this.activitiesRepository.delete(
             ActivityUniqueTrait.parse(activityUniqueTraitDto),
+            ActivityFilters.parse(filters),
             transaction,
           );
 
