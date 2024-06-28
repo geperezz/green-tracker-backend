@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS "categories" (
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "criteria" (
-	"index" integer,
+	"index" integer NOT NULL,
 	"subindex" integer NOT NULL,
 	"english_name" text NOT NULL,
 	"spanish_alias" text NOT NULL,
@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS "evidence_feedback" (
 	"activity_id" uuid NOT NULL,
 	"evidence_number" serial NOT NULL,
 	"admin_id" uuid NOT NULL,
-	"feedback" text NOT NULL,
-	CONSTRAINT "evidence_feedback_activity_id_evidence_number_admin_id_pk" PRIMARY KEY("activity_id","evidence_number","admin_id")
+	"feedback" "evidence_type" NOT NULL,
+	CONSTRAINT "evidence_feedback_activity_id_evidence_number_pk" PRIMARY KEY("activity_id","evidence_number")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "evidence" (

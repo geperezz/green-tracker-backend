@@ -1,5 +1,5 @@
 {
-  "id": "5180cd7b-aaba-42d5-9d1f-27824066d7f1",
+  "id": "8f17864f-cd38-42ad-b0f0-99e8bb7ed1a1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -138,7 +138,7 @@
           "name": "index",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "subindex": {
           "name": "subindex",
@@ -270,7 +270,8 @@
         },
         "feedback": {
           "name": "feedback",
-          "type": "text",
+          "type": "evidence_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         }
@@ -307,12 +308,11 @@
         }
       },
       "compositePrimaryKeys": {
-        "evidence_feedback_activity_id_evidence_number_admin_id_pk": {
-          "name": "evidence_feedback_activity_id_evidence_number_admin_id_pk",
+        "evidence_feedback_activity_id_evidence_number_pk": {
+          "name": "evidence_feedback_activity_id_evidence_number_pk",
           "columns": [
             "activity_id",
-            "evidence_number",
-            "admin_id"
+            "evidence_number"
           ]
         }
       },

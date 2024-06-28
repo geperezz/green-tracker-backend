@@ -1,3 +1,4 @@
+import { pgEnum } from 'drizzle-orm/pg-core';
 import {
   foreignKey,
   pgTable,
@@ -10,6 +11,13 @@ import {
 import { evidenceTable } from 'src/evidence/evidence.table';
 import { usersTable } from 'src/users/users.table';
 
+export const feedbackType = pgEnum('evidence_type', [
+  'approved',
+  'contact_admin',
+  'broken_link',
+  'broken_file',
+]);
+
 export const evidenceFeedbackTable = pgTable(
   'evidence_feedback',
   {
@@ -21,7 +29,7 @@ export const evidenceFeedbackTable = pgTable(
         onDelete: 'cascade',
       })
       .notNull(),
-    feedback: text('feedback').notNull(),
+    feedback: feedbackType('feedback').notNull(),
   },
   (evidenceFeedbackTable) => {
     return {
@@ -29,7 +37,6 @@ export const evidenceFeedbackTable = pgTable(
         columns: [
           evidenceFeedbackTable.activityId,
           evidenceFeedbackTable.evidenceNumber,
-          evidenceFeedbackTable.adminId,
         ],
       }),
       evidenceForeignKey: foreignKey({
