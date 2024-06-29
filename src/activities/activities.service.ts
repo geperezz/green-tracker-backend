@@ -44,16 +44,18 @@ export class ActivitiesService {
     activityCreationDto: ActivityCreationDto,
     transaction?: DrizzleTransaction,
   ): Promise<ActivityDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const activity = await this.activitiesRepository.create(
-          ActivityCreation.parse(activityCreationDto),
-          transaction,
-        );
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.create(activityCreationDto, transaction);
+      });
+    }
 
-        return ActivityDto.create({ ...activity, evidence: [] });
-      },
+    const activity = await this.activitiesRepository.create(
+      ActivityCreation.parse(activityCreationDto),
+      transaction,
     );
+
+    return ActivityDto.create({ ...activity, evidence: [] });
   }
 
   async findOne(
@@ -61,25 +63,27 @@ export class ActivitiesService {
     filters?: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<ActivityDto | null> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const activity = await this.activitiesRepository.findOne(
-          ActivityUniqueTrait.parse(activityUniqueTraitDto),
-          ActivityFilters.parse(filters),
-          transaction,
-        );
-        if (!activity) {
-          return null;
-        }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findOne(activityUniqueTraitDto, filters, transaction);
+      });
+    }
 
-        const evidence = await this.evidenceService.findAll(
-          EvidenceActivityUniqueTraitDto.create({ activityId: activity.id }),
-          transaction,
-        );
-
-        return ActivityDto.create({ ...activity, evidence });
-      },
+    const activity = await this.activitiesRepository.findOne(
+      ActivityUniqueTrait.parse(activityUniqueTraitDto),
+      ActivityFilters.parse(filters),
+      transaction,
     );
+    if (!activity) {
+      return null;
+    }
+
+    const evidence = await this.evidenceService.findAll(
+      EvidenceActivityUniqueTraitDto.create({ activityId: activity.id }),
+      transaction,
+    );
+
+    return ActivityDto.create({ ...activity, evidence });
   }
 
   async findPage(
@@ -87,32 +91,34 @@ export class ActivitiesService {
     filters?: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<ActivitiesPageDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const activitySchemasPage = await this.activitiesRepository.findPage(
-          PaginationOptions.parse(paginationOptionsDto),
-          ActivityFilters.parse(filters),
-          transaction,
-        );
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findPage(paginationOptionsDto, filters, transaction);
+      });
+    }
 
-        const activityDtosPage = {
-          ...activitySchemasPage,
-          items: await Promise.all(
-            activitySchemasPage.items.map(async (activity) => {
-              const evidence = await this.evidenceService.findAll(
-                EvidenceActivityUniqueTraitDto.create({
-                  activityId: activity.id,
-                }),
-                transaction,
-              );
-              return ActivityDto.create({ ...activity, evidence });
-            }),
-          ),
-        };
-
-        return activityDtosPage;
-      },
+    const activitySchemasPage = await this.activitiesRepository.findPage(
+      PaginationOptions.parse(paginationOptionsDto),
+      ActivityFilters.parse(filters),
+      transaction,
     );
+
+    const activityDtosPage = {
+      ...activitySchemasPage,
+      items: await Promise.all(
+        activitySchemasPage.items.map(async (activity) => {
+          const evidence = await this.evidenceService.findAll(
+            EvidenceActivityUniqueTraitDto.create({
+              activityId: activity.id,
+            }),
+            transaction,
+          );
+          return ActivityDto.create({ ...activity, evidence });
+        }),
+      ),
+    };
+
+    return activityDtosPage;
   }
 
   async replace(
@@ -120,31 +126,37 @@ export class ActivitiesService {
     activityReplacementDto: ActivityReplacementDto,
     transaction?: DrizzleTransaction,
   ): Promise<ActivityDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        try {
-          const newActivity = await this.activitiesRepository.replace(
-            ActivityUniqueTrait.parse(activityUniqueTraitDto),
-            ActivityReplacement.parse(activityReplacementDto),
-            transaction,
-          );
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.replace(
+          activityUniqueTraitDto,
+          activityReplacementDto,
+          transaction,
+        );
+      });
+    }
 
-          const evidence = await this.evidenceService.findAll(
-            EvidenceActivityUniqueTraitDto.create({
-              activityId: newActivity.id,
-            }),
-            transaction,
-          );
+    try {
+      const newActivity = await this.activitiesRepository.replace(
+        ActivityUniqueTrait.parse(activityUniqueTraitDto),
+        ActivityReplacement.parse(activityReplacementDto),
+        transaction,
+      );
 
-          return ActivityDto.create({ ...newActivity, evidence });
-        } catch (error) {
-          if (error instanceof ActivityNotFoundRepositoryError) {
-            throw new ActivityNotFoundError();
-          }
-          throw error;
-        }
-      },
-    );
+      const evidence = await this.evidenceService.findAll(
+        EvidenceActivityUniqueTraitDto.create({
+          activityId: newActivity.id,
+        }),
+        transaction,
+      );
+
+      return ActivityDto.create({ ...newActivity, evidence });
+    } catch (error) {
+      if (error instanceof ActivityNotFoundRepositoryError) {
+        throw new ActivityNotFoundError();
+      }
+      throw error;
+    }
   }
 
   async delete(
@@ -152,56 +164,59 @@ export class ActivitiesService {
     filters?: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<ActivityDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        try {
-          const evidence = await this.evidenceService.findAll(
-            EvidenceActivityUniqueTraitDto.create({
-              activityId: activityUniqueTraitDto.id,
-            }),
-            transaction,
-          );
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.delete(activityUniqueTraitDto, filters, transaction);
+      });
+    }
 
-          const activity = await this.activitiesRepository.delete(
-            ActivityUniqueTrait.parse(activityUniqueTraitDto),
-            ActivityFilters.parse(filters),
-            transaction,
-          );
+    try {
+      const evidence = await this.evidenceService.findAll(
+        EvidenceActivityUniqueTraitDto.create({
+          activityId: activityUniqueTraitDto.id,
+        }),
+        transaction,
+      );
 
-          return ActivityDto.create({ ...activity, evidence });
-        } catch (error) {
-          if (error instanceof ActivityNotFoundRepositoryError) {
-            throw new ActivityNotFoundError();
-          }
-          throw error;
-        }
-      },
-    );
+      const activity = await this.activitiesRepository.delete(
+        ActivityUniqueTrait.parse(activityUniqueTraitDto),
+        ActivityFilters.parse(filters),
+        transaction,
+      );
+
+      return ActivityDto.create({ ...activity, evidence });
+    } catch (error) {
+      if (error instanceof ActivityNotFoundRepositoryError) {
+        throw new ActivityNotFoundError();
+      }
+      throw error;
+    }
   }
 
   async findAllCurrent(
     filters?: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<Activity[]> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const uploadPeriod =
-          await this.uploadPeriodService.findAll(transaction);
-        if (!uploadPeriod) return [];
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findAllCurrent(filters, transaction);
+      });
+    }
 
-        const parsedFilters = ActivityFilters.parse(filters);
-        return await this.activitiesRepository.findMany(
-          ActivityFilters.parse({
-            ...parsedFilters,
-            uploadTimestamp: {
-              eq: parsedFilters.uploadTimestamp,
-              gte: new Date(uploadPeriod.startTimestamp),
-              lte: new Date(uploadPeriod.endTimestamp),
-            },
-          }),
-          transaction,
-        );
-      },
+    const uploadPeriod = await this.uploadPeriodService.findAll(transaction);
+    if (!uploadPeriod) return [];
+
+    const parsedFilters = ActivityFilters.parse(filters);
+    return await this.activitiesRepository.findMany(
+      ActivityFilters.parse({
+        ...parsedFilters,
+        uploadTimestamp: {
+          eq: parsedFilters.uploadTimestamp,
+          gte: new Date(uploadPeriod.startTimestamp),
+          lte: new Date(uploadPeriod.endTimestamp),
+        },
+      }),
+      transaction,
     );
   }
 
