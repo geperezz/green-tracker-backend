@@ -21,6 +21,9 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { join } from 'path';
 import { UnitsActivitiesModule } from './units-activities/units-activities.module';
 import { UnitsEvidenceModule } from './units-evidence/units-evidence.module';
+import { DocService } from './doc/doc.service.js';
+import { DocController } from './doc/doc.controller';
+
 
 @Module({
   imports: [
@@ -62,5 +65,7 @@ import { UnitsEvidenceModule } from './units-evidence/units-evidence.module';
       }),
     }),
   ],
+  providers: [DocService],
+  controllers: [DocController],
 })
 export class AppModule {}
