@@ -8,6 +8,7 @@ import {
   Post,
   Put,
   Query,
+  StreamableFile,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -70,6 +71,26 @@ export class CriteriaController {
     }
 
     return CriterionDto.create(criterionSchema);
+  }
+
+  @Get('/:subindex/report')
+  @LoggedInAs('unit')
+  async generateReport(
+    @Param()
+    uniqueTraitDto: CriterionUniqueTraitDto,
+  ): Promise<StreamableFile> {
+    const report = await this.criteriaRepository.generate(
+      CriterionUniqueTrait.parse(uniqueTraitDto),
+    );
+
+    if (!report) {
+      throw new NotFoundException(
+        'Report for criterion not found',
+        `Cannot generate report for criterion with index ${uniqueTraitDto.indicatorIndex}.${uniqueTraitDto.subindex}`,
+      );
+    }
+
+    return new StreamableFile(report);
   }
 
   @Get()

@@ -1,6 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { SQL, and, count, eq } from 'drizzle-orm';
 
+const docx = require('docx');
+const {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  saveAs,
+  Header,
+  HeadingLevel,
+  AlignmentType,
+} = docx;
+import * as fs from 'fs';
+
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
 import { criteriaTable } from './criteria.table';
 import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
@@ -11,6 +24,8 @@ import { CriterionReplacement } from './schemas/criterion-replacement.schema';
 import { CriterionUniqueTrait } from './schemas/criterion-unique-trait.schema';
 import { CriterionFilters } from './schemas/criterion-filters.schema';
 import { CriterionUpdate } from './schemas/criterion-update.schema';
+import { ActivitiesService } from 'src/activities/activities.service';
+import { ActivityFilters } from 'src/activities/schemas/activity-filters.schema';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -20,6 +35,7 @@ export class CriteriaRepository {
   constructor(
     @Inject('DRIZZLE_CLIENT')
     private readonly drizzleClient: DrizzleClient,
+    private readonly activitiesService: ActivitiesService,
   ) {}
 
   async createCriterion(
@@ -200,6 +216,77 @@ export class CriteriaRepository {
     }
 
     return Criterion.parse(deletedCriterion);
+  }
+
+  async generate(uniqueTrait: CriterionUniqueTrait): Promise<Buffer | null> {
+    const criterion = await this.findCriterion(uniqueTrait);
+    console.log(criterion);
+    if (!criterion || !criterion.categoryName) return null;
+    const activities = await this.activitiesService.findAllCurrent(
+      ActivityFilters.parse({ categoryName: criterion?.categoryName }),
+    );
+    console.log(activities);
+
+    const buildActivitiesParagraphs = () => {
+      let paragraphArray = [];
+      for (var i = 0; i < activities.length; i++) {
+        paragraphArray.push(
+          new Paragraph({
+            text: `Actividad: ${activities[i].name}`,
+            heading: HeadingLevel.HEADING_2,
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: 'Resumen: ',
+                bold: true,
+              }),
+              new TextRun({
+                text: activities[i].summary,
+              }),
+            ],
+          }),
+        );
+      }
+      return paragraphArray;
+    };
+
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          headers: {
+            default: new Header({
+              children: [new Paragraph('Reporte - Criterio 1')],
+            }),
+          },
+          children: [
+            new Paragraph({
+              text: 'Reporte - Criterio 1',
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER,
+            }),
+            ...buildActivitiesParagraphs(),
+          ],
+        },
+      ],
+    });
+
+    /*Packer.toBlob(doc).then((blob: Blob) => {
+      // saveAs from FileSaver will download the file
+      saveAs(blob, "example.docx");
+    });
+
+    
+    return blob*/
+
+    Packer.toBuffer(doc).then((buffer: Buffer) => {
+      fs.writeFileSync('My Document.docx', buffer);
+    });
+
+    // Used to export the file into a .docx file
+    return Packer.toBuffer(doc);
   }
 
   private transformUniqueTraitToWhereConditions(
