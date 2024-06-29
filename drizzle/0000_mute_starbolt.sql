@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS "evidence_feedback" (
 	"evidence_number" serial NOT NULL,
 	"admin_id" uuid NOT NULL,
 	"feedback" "evidence_type" NOT NULL,
-	CONSTRAINT "evidence_feedback_activity_id_evidence_number_pk" PRIMARY KEY("activity_id","evidence_number")
+	CONSTRAINT "evidence_feedback_activity_id_evidence_number_feedback_pk" PRIMARY KEY("activity_id","evidence_number","feedback")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "evidence" (

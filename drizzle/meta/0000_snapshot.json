@@ -1,5 +1,5 @@
 {
-  "id": "8f17864f-cd38-42ad-b0f0-99e8bb7ed1a1",
+  "id": "8c1aa0ed-4e57-428d-9404-2e7572c2d1b9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -308,11 +308,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "evidence_feedback_activity_id_evidence_number_pk": {
-          "name": "evidence_feedback_activity_id_evidence_number_pk",
+        "evidence_feedback_activity_id_evidence_number_feedback_pk": {
+          "name": "evidence_feedback_activity_id_evidence_number_feedback_pk",
           "columns": [
             "activity_id",
-            "evidence_number"
+            "evidence_number",
+            "feedback"
           ]
         }
       },

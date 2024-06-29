@@ -37,6 +37,7 @@ export const evidenceFeedbackTable = pgTable(
         columns: [
           evidenceFeedbackTable.activityId,
           evidenceFeedbackTable.evidenceNumber,
+          evidenceFeedbackTable.feedback,
         ],
       }),
       evidenceForeignKey: foreignKey({
