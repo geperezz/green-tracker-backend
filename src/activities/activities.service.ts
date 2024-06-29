@@ -60,7 +60,7 @@ export class ActivitiesService {
 
   async findOne(
     activityUniqueTraitDto: ActivityUniqueTraitDto,
-    filters?: ActivityFiltersDto,
+    filters: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<ActivityDto | null> {
     if (transaction === undefined) {
@@ -88,7 +88,7 @@ export class ActivitiesService {
 
   async findPage(
     paginationOptionsDto: PaginationOptionsDto,
-    filters?: ActivityFiltersDto,
+    filters: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<ActivitiesPageDto> {
     if (transaction === undefined) {
@@ -161,7 +161,7 @@ export class ActivitiesService {
 
   async delete(
     activityUniqueTraitDto: ActivityUniqueTraitDto,
-    filters?: ActivityFiltersDto,
+    filters: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<ActivityDto> {
     if (transaction === undefined) {
@@ -194,7 +194,7 @@ export class ActivitiesService {
   }
 
   async findAllCurrent(
-    filters?: ActivityFiltersDto,
+    filters: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
   ): Promise<Activity[]> {
     if (transaction === undefined) {

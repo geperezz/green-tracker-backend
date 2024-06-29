@@ -43,6 +43,7 @@ export class ActivitiesController {
   ): Promise<ActivityDto> {
     const activity = await this.activitiesService.findOne(
       activityUniqueTraitDto,
+      ActivityFiltersDto.create({}),
     );
 
     if (!activity) {
@@ -100,6 +101,7 @@ export class ActivitiesController {
     try {
       const deletedActivitySchema = await this.activitiesService.delete(
         ActivityUniqueTrait.parse(activityUniqueTraitDto),
+        ActivityFiltersDto.create({}),
       );
 
       return ActivityDto.create(deletedActivitySchema);
