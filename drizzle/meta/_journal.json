@@ -8,6 +8,13 @@
       "when": 1717973871842,
       "tag": "0000_fixed_true_believers",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1719768170938,
+      "tag": "0001_common_jubilee",
+      "breakpoints": true
     }
   ]
 }

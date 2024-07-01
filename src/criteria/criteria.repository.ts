@@ -26,6 +26,7 @@ import { CriterionFilters } from './schemas/criterion-filters.schema';
 import { CriterionUpdate } from './schemas/criterion-update.schema';
 import { ActivitiesService } from 'src/activities/activities.service';
 import { ActivityFilters } from 'src/activities/schemas/activity-filters.schema';
+import { UnitsService } from 'src/units/units.service';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -35,7 +36,9 @@ export class CriteriaRepository {
   constructor(
     @Inject('DRIZZLE_CLIENT')
     private readonly drizzleClient: DrizzleClient,
+    //quitar y pasar al service
     private readonly activitiesService: ActivitiesService,
+    private readonly unitsService: UnitsService,
   ) {}
 
   async createCriterion(
@@ -221,6 +224,10 @@ export class CriteriaRepository {
   async generate(uniqueTrait: CriterionUniqueTrait): Promise<Buffer | null> {
     const criterion = await this.findCriterion(uniqueTrait);
     console.log(criterion);
+    console.log('es cat'+criterion?.categoryName);
+
+    const units = await this.unitsService
+
     if (!criterion || !criterion.categoryName) return null;
     const activities = await this.activitiesService.findAllCurrent(
       ActivityFilters.parse({ categoryName: criterion?.categoryName }),
