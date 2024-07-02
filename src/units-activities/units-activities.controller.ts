@@ -29,6 +29,9 @@ import { UserDto } from 'src/users/dtos/user.dto';
 import { ActivityUniqueTraitDto } from 'src/activities/dtos/activity-unique-trait.dto';
 import { ActivityFiltersDto } from 'src/activities/dtos/activity-filters.dto';
 import { ActivityReplacementDto } from 'src/activities/dtos/activity-replacement.dto';
+import { ActivityWithEvidencesAndFeedbacksDto } from 'src/activities/dtos/activity-evidence-feedback.dto';
+import { UserUniqueTraitDto } from 'src/users/dtos/user-unique-trait.dto';
+import { UserUniqueTrait } from 'src/users/schemas/user-unique-trait.schema';
 
 @Controller('/units/me/activities/')
 @ApiTags('Activities of logged in units')
@@ -36,6 +39,16 @@ import { ActivityReplacementDto } from 'src/activities/dtos/activity-replacement
 export class UnitsActivitiesController {
   constructor(private readonly activitiesService: ActivitiesService) {}
 
+  @Get('/feedback')
+  async findMyActivitiesWithFeedback(
+    @UserFromToken()
+    me: UserDto,
+  ): Promise<ActivityWithEvidencesAndFeedbacksDto[] | null> {
+    return await this.activitiesService.findWithFeedbacks(
+      UserUniqueTrait.parse({id: me.id}),
+    );
+  }
+  
   @Post()
   async createMyActivity(
     @Body()

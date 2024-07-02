@@ -70,17 +70,6 @@ export class ActivitiesController {
       filtersDto,
     );
   }
-  
-  @LoggedInAs('unit')
-  @Get('/:id/feedback')
-  async findWithFeedback(
-    @Query()
-    unitUniqueTrait: UserUniqueTraitDto,
-  ): Promise<ActivityWithEvidencesAndFeedbacksDto[] | null> {
-    return await this.activitiesService.findWithFeedbacks(
-      UserUniqueTrait.parse(unitUniqueTrait),
-    );
-  }
 
   @Put('/:id/')
   async replace(
