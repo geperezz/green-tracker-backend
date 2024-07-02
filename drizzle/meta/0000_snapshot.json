@@ -1,5 +1,5 @@
 {
-  "id": "8c1aa0ed-4e57-428d-9404-2e7572c2d1b9",
+  "id": "0e8e9469-c226-4f1f-8b3b-7c61c24bbb1c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -270,7 +270,7 @@
         },
         "feedback": {
           "name": "feedback",
-          "type": "evidence_type",
+          "type": "feedback_type",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
@@ -629,6 +629,16 @@
     }
   },
   "enums": {
+    "public.feedback_type": {
+      "name": "feedback_type",
+      "schema": "public",
+      "values": [
+        "approved",
+        "contact_admin",
+        "broken_link",
+        "broken_file"
+      ]
+    },
     "public.evidence_type": {
       "name": "evidence_type",
       "schema": "public",

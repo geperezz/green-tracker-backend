@@ -1,4 +1,10 @@
 DO $$ BEGIN
+ CREATE TYPE "public"."feedback_type" AS ENUM('approved', 'contact_admin', 'broken_link', 'broken_file');
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
  CREATE TYPE "public"."evidence_type" AS ENUM('image', 'document', 'link');
 EXCEPTION
  WHEN duplicate_object THEN null;
@@ -42,7 +48,7 @@ CREATE TABLE IF NOT EXISTS "evidence_feedback" (
 	"activity_id" uuid NOT NULL,
 	"evidence_number" serial NOT NULL,
 	"admin_id" uuid NOT NULL,
-	"feedback" "evidence_type" NOT NULL,
+	"feedback" "feedback_type" NOT NULL,
 	CONSTRAINT "evidence_feedback_activity_id_evidence_number_feedback_pk" PRIMARY KEY("activity_id","evidence_number","feedback")
 );
 --> statement-breakpoint

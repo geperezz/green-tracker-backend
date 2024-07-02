@@ -11,7 +11,7 @@ import {
 import { evidenceTable } from 'src/evidence/evidence.table';
 import { usersTable } from 'src/users/users.table';
 
-export const feedbackType = pgEnum('evidence_type', [
+export const feedbackType = pgEnum('feedback_type', [
   'approved',
   'contact_admin',
   'broken_link',

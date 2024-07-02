@@ -1,9 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { SQL, and, count, eq } from 'drizzle-orm';
+import { SQL, and, eq } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
 import { evidenceFeedbackTable } from './evidence-feedback.table';
-import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
 import { EvidenceFeedbackCreation } from './schemas/evidence-feedback-creation.schema';
 import { EvidenceFeedback } from './schemas/evidence-feedback.schema';
 import { EvidenceFeedbackUniqueTrait } from './schemas/evidence-feedback-unique-trait.schema';
@@ -20,13 +19,13 @@ export class EvidenceFeedbackRepository {
     private readonly drizzleClient: DrizzleClient,
   ) {}
 
-  async createEvidenceFeedback(
+  async create(
     creationData: EvidenceFeedbackCreation,
     transaction?: DrizzleTransaction,
   ): Promise<EvidenceFeedback> {
     if (transaction === undefined) {
       return await this.drizzleClient.transaction(async (transaction) => {
-        return await this.createEvidenceFeedback(creationData, transaction);
+        return await this.create(creationData, transaction);
       });
     }
 

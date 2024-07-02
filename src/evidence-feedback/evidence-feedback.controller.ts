@@ -42,7 +42,7 @@ export class EvidenceFeedbackController {
     creationDataDto: EvidenceFeedbackCreationDto,
   ): Promise<EvidenceFeedbackDto> {
     const createdCriterionSchema =
-      await this.evidenceFeedbackRepository.createEvidenceFeedback(
+      await this.evidenceFeedbackRepository.create(
         EvidenceFeedbackCreation.parse({
           ...evidenceUniqueTraitDto,
           ...creationDataDto,
