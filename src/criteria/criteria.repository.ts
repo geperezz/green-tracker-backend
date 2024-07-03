@@ -316,19 +316,6 @@ export class CriteriaRepository {
       ],
     });
 
-    /*Packer.toBlob(doc).then((blob: Blob) => {
-      // saveAs from FileSaver will download the file
-      saveAs(blob, "example.docx");
-    });
-
-    
-    return blob*/
-
-    Packer.toBuffer(doc).then((buffer: Buffer) => {
-      fs.writeFileSync('My Document.docx', buffer);
-    });
-
-    // Used to export the file into a .docx file
     return Packer.toBuffer(doc);
   }
 
