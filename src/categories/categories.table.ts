@@ -13,7 +13,7 @@ export const categoriesTable = pgTable(
         onDelete: 'cascade',
       }),
     name: text('name').notNull(),
-    helpText: text('help_text'),
+    helpText: text('help_text').notNull(),
   },
   (categoriesTable) => {
     return {
