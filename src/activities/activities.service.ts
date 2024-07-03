@@ -24,6 +24,12 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { UploadPeriodService } from 'src/upload-period/upload-period.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Activity } from './schemas/activity.schema';
+import { activitiesTable } from './activities.table';
+import { and, eq } from 'drizzle-orm';
+import { evidenceTable } from 'src/evidence/evidence.table';
+import { evidenceFeedbackTable } from 'src/evidence-feedback/evidence-feedback.table';
+import { ActivityWithEvidencesAndFeedbacks } from './schemas/activity-evidence-feedback.schema';
+import { UserUniqueTrait } from 'src/users/schemas/user-unique-trait.schema';
 
 export abstract class ActivitiesServiceError extends Error {}
 export class ActivityNotFoundError extends ActivitiesServiceError {}
@@ -218,6 +224,61 @@ export class ActivitiesService {
       }),
       transaction,
     );
+  }
+
+  async findWithFeedbacks(
+    unitUniqueTrait: UserUniqueTrait,
+    transaction?: DrizzleTransaction,
+  ): Promise<ActivityWithEvidencesAndFeedbacks[] | null> {
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.findWithFeedbacks(unitUniqueTrait, transaction);
+      });
+    }
+
+    const activities = await transaction.select().from(activitiesTable);
+
+    if (!activities) return null;
+
+    const activitiesWithEvidenceAndFeedbacks = await Promise.all(
+      activities.map(async (activity) => {
+        const evidences = await transaction
+          .select()
+          .from(evidenceTable)
+          .where(eq(evidenceTable.activityId, activity.id));
+
+        const evidenceWithFeedbacks = await Promise.all(
+          evidences.map(async (evidence) => {
+            const feedbacks = await transaction
+              .select()
+              .from(evidenceFeedbackTable)
+              .where(
+                and(
+                  eq(evidenceFeedbackTable.activityId, evidence.activityId),
+                  eq(
+                    evidenceFeedbackTable.evidenceNumber,
+                    evidence.evidenceNumber,
+                  ),
+                ),
+              );
+
+            return {
+              ...evidence,
+              feedbacks: feedbacks.map((feedback) => ({
+                ...feedback,
+              })),
+            };
+          }),
+        );
+
+        return ActivityWithEvidencesAndFeedbacks.parse({
+          ...activity,
+          evidences: evidenceWithFeedbacks,
+        });
+      }),
+    );
+
+    return activitiesWithEvidenceAndFeedbacks;
   }
 
   @Cron(CronExpression.EVERY_WEEK)

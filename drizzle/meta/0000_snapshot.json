@@ -1,5 +1,5 @@
 {
-  "id": "5180cd7b-aaba-42d5-9d1f-27824066d7f1",
+  "id": "0e8e9469-c226-4f1f-8b3b-7c61c24bbb1c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -138,7 +138,7 @@
           "name": "index",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "subindex": {
           "name": "subindex",
@@ -270,7 +270,8 @@
         },
         "feedback": {
           "name": "feedback",
-          "type": "text",
+          "type": "feedback_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         }
@@ -307,12 +308,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "evidence_feedback_activity_id_evidence_number_admin_id_pk": {
-          "name": "evidence_feedback_activity_id_evidence_number_admin_id_pk",
+        "evidence_feedback_activity_id_evidence_number_feedback_pk": {
+          "name": "evidence_feedback_activity_id_evidence_number_feedback_pk",
           "columns": [
             "activity_id",
             "evidence_number",
-            "admin_id"
+            "feedback"
           ]
         }
       },
@@ -628,6 +629,16 @@
     }
   },
   "enums": {
+    "public.feedback_type": {
+      "name": "feedback_type",
+      "schema": "public",
+      "values": [
+        "approved",
+        "contact_admin",
+        "broken_link",
+        "broken_file"
+      ]
+    },
     "public.evidence_type": {
       "name": "evidence_type",
       "schema": "public",

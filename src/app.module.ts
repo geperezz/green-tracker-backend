@@ -21,6 +21,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { join } from 'path';
 import { UnitsActivitiesModule } from './units-activities/units-activities.module';
 import { UnitsEvidenceModule } from './units-evidence/units-evidence.module';
+import { EvidenceFeedbackModule } from './evidence-feedback/evidence-feedback.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { UnitsEvidenceModule } from './units-evidence/units-evidence.module';
     ActivitiesModule,
     ActivitiesModule,
     EvidenceModule,
+    EvidenceFeedbackModule,
     UploadPeriodModule,
     RecommendedCategoriesModule,
     ScheduleModule.forRoot(),
