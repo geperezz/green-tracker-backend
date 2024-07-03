@@ -30,12 +30,16 @@ import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 import { CriterionIndicatorIndexDto } from './dtos/criterion-indicator-index.dto';
 import { CriterionCreationDto } from './dtos/criterion-creation.dto';
 import { CriterionFilters } from './schemas/criterion-filters.schema';
+import { CriteriaService } from './criteria.service';
 
 @Controller('/indicators/:indicatorIndex/criteria/')
 @ApiTags('Criteria')
 @LoggedInAs('superadmin', 'admin')
 export class CriteriaController {
-  constructor(private readonly criteriaRepository: CriteriaRepository) {}
+  constructor(
+    private readonly criteriaRepository: CriteriaRepository,
+    private readonly criteriaService: CriteriaService
+  ) {}
 
   @Post()
   async createCriterion(
@@ -45,7 +49,7 @@ export class CriteriaController {
     creationDataDto: CriterionCreationDto,
   ): Promise<CriterionDto> {
     const createdCriterionSchema =
-      await this.criteriaRepository.createCriterion(
+      await this.criteriaService.createCriterion(
         CriterionCreation.parse({
           ...indicatorIndexDto,
           ...creationDataDto,
@@ -60,7 +64,7 @@ export class CriteriaController {
     @Param()
     uniqueTraitDto: CriterionUniqueTraitDto,
   ): Promise<CriterionDto> {
-    const criterionSchema = await this.criteriaRepository.findCriterion(
+    const criterionSchema = await this.criteriaService.findCriterion(
       CriterionUniqueTrait.parse(uniqueTraitDto),
     );
 
@@ -81,11 +85,11 @@ export class CriteriaController {
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   )
   @LoggedInAs('unit')
-  async generateReport(
+  async getReport(
     @Param()
     uniqueTraitDto: CriterionUniqueTraitDto,
   ): Promise<StreamableFile> {
-    const report = await this.criteriaRepository.generateReport(
+    const report = await this.criteriaService.generateReport(
       CriterionUniqueTrait.parse(uniqueTraitDto),
     );
 
@@ -107,7 +111,7 @@ export class CriteriaController {
     @Query()
     paginationOptionsDto: PaginationOptionsDto,
   ): Promise<CriteriaPageDto> {
-    const criteriaSchemasPage = await this.criteriaRepository.findCriteriaPage(
+    const criteriaSchemasPage = await this.criteriaService.findCriteriaPage(
       PaginationOptions.parse(paginationOptionsDto),
       CriterionFilters.parse(indicatorIndexDto),
     );
@@ -130,7 +134,7 @@ export class CriteriaController {
     replacementDataDto: CriterionReplacementDto,
   ): Promise<CriterionDto> {
     try {
-      const newCriterionSchema = await this.criteriaRepository.replaceCriterion(
+      const newCriterionSchema = await this.criteriaService.replaceCriterion(
         CriterionUniqueTrait.parse(uniqueTraitDto),
         CriterionReplacement.parse({
           ...replacementDataDto,
@@ -158,7 +162,7 @@ export class CriteriaController {
   ): Promise<CriterionDto> {
     try {
       const deletedCriterionSchema =
-        await this.criteriaRepository.deleteCriterion(
+        await this.criteriaService.deleteCriterion(
           CriterionUniqueTrait.parse(uniqueTraitDto),
         );
 
