@@ -7,7 +7,6 @@ import {
   Param,
   Post,
   Put,
-  Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -25,6 +24,10 @@ import { EvidenceFeedbackUniqueTrait } from './schemas/evidence-feedback-unique-
 import { EvidenceUniqueTrait } from 'src/evidence/schemas/evidence-unique-trait.schema';
 import { EvidenceFeedbackReplacement } from './schemas/evidence-feedback-replacement.schema';
 import { EvidenceFeedbackUniqueTraitDto } from './dtos/evidence-feedback-unique-trait.dto';
+import { UserFromToken } from 'src/auth/user-from-token.decorator';
+import { UserDto } from 'src/users/dtos/user.dto';
+import { AdminEvidenceFeedbackCreationDtoSchema } from './dtos/admin-evidence-feedback-creation.dto';
+import { AdminEvidenceFeedbackReplacementDtoSchema } from './dtos/admin-evidence-feedback-replacement.dto';
 
 @Controller('/activity/:activityId/evidence/:evidenceNumber/feedback')
 @ApiTags('EvidenceFeedback')
@@ -38,16 +41,20 @@ export class EvidenceFeedbackController {
   async create(
     @Param()
     evidenceUniqueTraitDto: EvidenceUniqueTraitDto,
+    @UserFromToken()
+    me: UserDto,
     @Body()
-    creationDataDto: EvidenceFeedbackCreationDto,
+    creationDataDto: AdminEvidenceFeedbackCreationDtoSchema, //AdminEvidenceFeedbackCreationDto
   ): Promise<EvidenceFeedbackDto> {
-    const createdCriterionSchema =
-      await this.evidenceFeedbackRepository.create(
-        EvidenceFeedbackCreation.parse({
-          ...evidenceUniqueTraitDto,
+    const createdCriterionSchema = await this.evidenceFeedbackRepository.create(
+      EvidenceFeedbackCreation.parse({
+        ...evidenceUniqueTraitDto,
+        ...EvidenceFeedbackCreationDto.create({
           ...creationDataDto,
+          adminId: me.id,
         }),
-      );
+      }),
+    );
     return EvidenceFeedbackDto.create(createdCriterionSchema);
   }
 
@@ -86,13 +93,18 @@ export class EvidenceFeedbackController {
   async replace(
     @Param()
     uniqueTraitDto: EvidenceFeedbackUniqueTraitDto,
+    @UserFromToken()
+    me: UserDto,
     @Body()
-    replacementDataDto: EvidenceFeedbackReplacementDto,
+    replacementDataDto: AdminEvidenceFeedbackReplacementDtoSchema,
   ) {
     try {
       return await this.evidenceFeedbackRepository.update(
         EvidenceFeedbackUniqueTrait.parse(uniqueTraitDto),
-        EvidenceFeedbackReplacement.parse(replacementDataDto),
+        EvidenceFeedbackReplacement.parse({
+          ...replacementDataDto,
+          adminId: me.id,
+        }),
       );
     } catch (error) {
       if (error instanceof EvidenceFeedbackNotFoundError) {
