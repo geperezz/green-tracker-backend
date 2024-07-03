@@ -30,6 +30,9 @@ import { evidenceTable } from 'src/evidence/evidence.table';
 import { evidenceFeedbackTable } from 'src/evidence-feedback/evidence-feedback.table';
 import { ActivityWithEvidencesAndFeedbacks } from './schemas/activity-evidence-feedback.schema';
 import { UserUniqueTrait } from 'src/users/schemas/user-unique-trait.schema';
+import { ActivityWithEvidencesAndFeedbacksDto } from './dtos/activity-evidence-feedback.dto';
+import { EvidenceFeedbackRepository } from 'src/evidence-feedback/evidence-feedback.repository';
+import { EvidenceUniqueTrait } from 'src/evidence/schemas/evidence-unique-trait.schema';
 
 export abstract class ActivitiesServiceError extends Error {}
 export class ActivityNotFoundError extends ActivitiesServiceError {}
@@ -41,6 +44,7 @@ export class ActivitiesService {
     private readonly drizzleClient: DrizzleClient,
     private readonly activitiesRepository: ActivitiesRepository,
     private readonly evidenceService: EvidenceService,
+    private readonly evidenceFeedbackRepository: EvidenceFeedbackRepository,
     private readonly unitsService: UnitsService,
     private readonly mailerService: MailerService,
     private readonly uploadPeriodService: UploadPeriodService,
@@ -68,7 +72,7 @@ export class ActivitiesService {
     activityUniqueTraitDto: ActivityUniqueTraitDto,
     filters: ActivityFiltersDto,
     transaction?: DrizzleTransaction,
-  ): Promise<ActivityDto | null> {
+  ): Promise<ActivityWithEvidencesAndFeedbacksDto | null> {
     if (transaction === undefined) {
       return await this.drizzleClient.transaction(async (transaction) => {
         return await this.findOne(activityUniqueTraitDto, filters, transaction);
@@ -84,12 +88,33 @@ export class ActivitiesService {
       return null;
     }
 
-    const evidence = await this.evidenceService.findAll(
+    const evidences = await this.evidenceService.findAll(
       EvidenceActivityUniqueTraitDto.create({ activityId: activity.id }),
       transaction,
     );
 
-    return ActivityDto.create({ ...activity, evidence });
+    const evidenceWithFeedbacks = await Promise.all(
+      evidences.map(async (evidence) => {
+        const feedbacks = await this.evidenceFeedbackRepository.findAll(
+          EvidenceUniqueTrait.parse({
+            activityId: activityUniqueTraitDto.id,
+            evidenceNumber: evidence.evidenceNumber,
+          }),
+        );
+
+        return {
+          ...evidence,
+          feedbacks: feedbacks.map((feedback) => ({
+            ...feedback,
+          })),
+        };
+      }),
+    );
+
+    return ActivityWithEvidencesAndFeedbacksDto.create({
+      ...activity,
+      evidences: evidenceWithFeedbacks,
+    });
   }
 
   async findPage(
@@ -150,6 +175,13 @@ export class ActivitiesService {
       );
 
       const evidence = await this.evidenceService.findAll(
+        EvidenceActivityUniqueTraitDto.create({
+          activityId: newActivity.id,
+        }),
+        transaction,
+      );
+
+      const feedback = await this.evidenceService.findAll(
         EvidenceActivityUniqueTraitDto.create({
           activityId: newActivity.id,
         }),

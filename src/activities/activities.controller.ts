@@ -43,7 +43,7 @@ export class ActivitiesController {
   async findOne(
     @Param()
     activityUniqueTraitDto: ActivityUniqueTraitDto,
-  ): Promise<ActivityDto> {
+  ): Promise<ActivityWithEvidencesAndFeedbacksDto> {
     const activity = await this.activitiesService.findOne(
       activityUniqueTraitDto,
       ActivityFiltersDto.create({}),

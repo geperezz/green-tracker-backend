@@ -4,7 +4,7 @@ import { activitySchema } from './activity.schema';
 import { evidenceWithFeedbackSchema } from 'src/evidence/schemas/evidence-with-feedback.schema';
 
 export const activityWithEvidencesAndFeedbacksSchema = activitySchema.extend({
-  evidences: z.array(evidenceWithFeedbackSchema),
+  evidences: z.array(evidenceWithFeedbackSchema).optional(),
 });
 
 export const ActivityWithEvidencesAndFeedbacks =
