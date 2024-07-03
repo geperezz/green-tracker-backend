@@ -1,1 +1,0 @@
-ALTER TABLE "criteria" DROP CONSTRAINT "criteria_subindex_unique";

@@ -1,5 +1,5 @@
 {
-  "id": "0e8e9469-c226-4f1f-8b3b-7c61c24bbb1c",
+  "id": "31e248e8-32b4-49cf-92f6-212160da0f96",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -98,6 +98,12 @@
         },
         "name": {
           "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "help_text": {
+          "name": "help_text",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -223,13 +229,6 @@
         }
       },
       "uniqueConstraints": {
-        "criteria_subindex_unique": {
-          "name": "criteria_subindex_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "subindex"
-          ]
-        },
         "criteria_english_name_unique": {
           "name": "criteria_english_name_unique",
           "nullsNotDistinct": false,

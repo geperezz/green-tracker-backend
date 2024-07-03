@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS "activities" (
 CREATE TABLE IF NOT EXISTS "categories" (
 	"indicator_index" integer NOT NULL,
 	"name" text NOT NULL,
+	"help_text" text NOT NULL,
 	CONSTRAINT "categories_indicator_index_name_pk" PRIMARY KEY("indicator_index","name")
 );
 --> statement-breakpoint
@@ -39,7 +40,6 @@ CREATE TABLE IF NOT EXISTS "criteria" (
 	"spanish_alias" text NOT NULL,
 	"category_name" text,
 	CONSTRAINT "criteria_index_subindex_pk" PRIMARY KEY("index","subindex"),
-	CONSTRAINT "criteria_subindex_unique" UNIQUE("subindex"),
 	CONSTRAINT "criteria_english_name_unique" UNIQUE("english_name"),
 	CONSTRAINT "criteria_spanish_alias_unique" UNIQUE("spanish_alias")
 );
