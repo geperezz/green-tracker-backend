@@ -96,7 +96,7 @@ export class CriteriaController {
     if (!report) {
       throw new NotFoundException(
         'Criterio no encontrado',
-        `No pue ${uniqueTraitDto.indicatorIndex}.${uniqueTraitDto.subindex}`,
+        `No existe el criterio ${uniqueTraitDto.indicatorIndex}.${uniqueTraitDto.subindex} o no tiene una categoría asociada`,
       );
     }
 

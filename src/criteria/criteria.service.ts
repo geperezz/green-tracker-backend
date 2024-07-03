@@ -160,6 +160,7 @@ export class CriteriaService {
     const criterion = await this.findCriterion(uniqueTrait);
     if (!criterion || !criterion.categoryName) return null;
 
+    //cuando se vaya a main, revisar
     const build = async () => {
       let paragraphArray = [];
 
