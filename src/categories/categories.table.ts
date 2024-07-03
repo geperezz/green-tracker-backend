@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { pgTable, integer, text, primaryKey } from 'drizzle-orm/pg-core';
 
 import { indicatorsTable } from 'src/indicators/indicators.table';
@@ -12,6 +13,7 @@ export const categoriesTable = pgTable(
         onDelete: 'cascade',
       }),
     name: text('name').notNull(),
+    helpText: text('help_text'),
   },
   (categoriesTable) => {
     return {
