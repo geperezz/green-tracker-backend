@@ -1,6 +1,6 @@
 {
-  "id": "0e8e9469-c226-4f1f-8b3b-7c61c24bbb1c",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "7ea65b6f-2281-406a-b683-4317ebba1f7e",
+  "prevId": "5180cd7b-aaba-42d5-9d1f-27824066d7f1",
   "version": "6",
   "dialect": "postgresql",
   "tables": {
@@ -223,13 +223,6 @@
         }
       },
       "uniqueConstraints": {
-        "criteria_subindex_unique": {
-          "name": "criteria_subindex_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "subindex"
-          ]
-        },
         "criteria_english_name_unique": {
           "name": "criteria_english_name_unique",
           "nullsNotDistinct": false,
@@ -270,8 +263,7 @@
         },
         "feedback": {
           "name": "feedback",
-          "type": "feedback_type",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         }
@@ -308,12 +300,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "evidence_feedback_activity_id_evidence_number_feedback_pk": {
-          "name": "evidence_feedback_activity_id_evidence_number_feedback_pk",
+        "evidence_feedback_activity_id_evidence_number_admin_id_pk": {
+          "name": "evidence_feedback_activity_id_evidence_number_admin_id_pk",
           "columns": [
             "activity_id",
             "evidence_number",
-            "feedback"
+            "admin_id"
           ]
         }
       },
@@ -629,16 +621,6 @@
     }
   },
   "enums": {
-    "public.feedback_type": {
-      "name": "feedback_type",
-      "schema": "public",
-      "values": [
-        "approved",
-        "contact_admin",
-        "broken_link",
-        "broken_file"
-      ]
-    },
     "public.evidence_type": {
       "name": "evidence_type",
       "schema": "public",

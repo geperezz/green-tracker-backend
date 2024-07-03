@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   NotFoundException,
   Param,
   Post,
@@ -74,19 +75,24 @@ export class CriteriaController {
   }
 
   @Get('/:subindex/report')
+  @Header('Content-Disposition', `attachment; filename="report.docx"`)
+  @Header(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  )
   @LoggedInAs('unit')
   async generateReport(
     @Param()
     uniqueTraitDto: CriterionUniqueTraitDto,
   ): Promise<StreamableFile> {
-    const report = await this.criteriaRepository.generate(
+    const report = await this.criteriaRepository.generateReport(
       CriterionUniqueTrait.parse(uniqueTraitDto),
     );
 
     if (!report) {
       throw new NotFoundException(
-        'Report for criterion not found',
-        `Cannot generate report for criterion with index ${uniqueTraitDto.indicatorIndex}.${uniqueTraitDto.subindex}`,
+        'Criterio no encontrado',
+        `No pue ${uniqueTraitDto.indicatorIndex}.${uniqueTraitDto.subindex}`,
       );
     }
 

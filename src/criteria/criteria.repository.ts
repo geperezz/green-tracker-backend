@@ -27,6 +27,8 @@ import { CriterionUpdate } from './schemas/criterion-update.schema';
 import { ActivitiesService } from 'src/activities/activities.service';
 import { ActivityFilters } from 'src/activities/schemas/activity-filters.schema';
 import { UnitsService } from 'src/units/units.service';
+import { EvidenceService } from 'src/evidence/evidence.service';
+import { ActivityUniqueTraitDto } from 'src/evidence/dtos/activity-unique-trait.dto';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -39,6 +41,7 @@ export class CriteriaRepository {
     //quitar y pasar al service
     private readonly activitiesService: ActivitiesService,
     private readonly unitsService: UnitsService,
+    private readonly evidenceService: EvidenceService,
   ) {}
 
   async createCriterion(
@@ -221,40 +224,73 @@ export class CriteriaRepository {
     return Criterion.parse(deletedCriterion);
   }
 
-  async generate(uniqueTrait: CriterionUniqueTrait): Promise<Buffer | null> {
+  async generateReport(uniqueTrait: CriterionUniqueTrait): Promise<Buffer | null> {
     const criterion = await this.findCriterion(uniqueTrait);
-    console.log(criterion);
-    console.log('es cat'+criterion?.categoryName);
-
-    const units = await this.unitsService
-
     if (!criterion || !criterion.categoryName) return null;
-    const activities = await this.activitiesService.findAllCurrent(
-      ActivityFilters.parse({ categoryName: criterion?.categoryName }),
-    );
-    console.log(activities);
 
-    const buildActivitiesParagraphs = () => {
+    const units = await this.unitsService.findAll();
+
+    const build = async () => {
       let paragraphArray = [];
-      for (var i = 0; i < activities.length; i++) {
+
+      const units = await this.unitsService.findAll();
+      for (const unit of units) {
         paragraphArray.push(
           new Paragraph({
-            text: `Actividad: ${activities[i].name}`,
+            text: `Unidad: ${unit.name} - Actividades`,
             heading: HeadingLevel.HEADING_2,
             alignment: AlignmentType.CENTER,
           }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: 'Resumen: ',
-                bold: true,
-              }),
-              new TextRun({
-                text: activities[i].summary,
-              }),
-            ],
+        );
+        const activities = await this.activitiesService.findAllCurrent(
+          ActivityFilters.parse({
+            categoryName: criterion?.categoryName,
+            unitId: unit.id,
           }),
         );
+        for (const activity of activities) {
+          paragraphArray.push(
+            new Paragraph({
+              text: `Actividad: ${activity.name}`,
+              heading: HeadingLevel.HEADING_3,
+              alignment: AlignmentType.CENTER,
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'Resumen: ',
+                  bold: true,
+                }),
+                new TextRun({
+                  text: activity.summary,
+                }),
+              ],
+            }),
+            new Paragraph({
+              text: `Evidencias:`,
+              heading: HeadingLevel.HEADING_4,
+              alignment: AlignmentType.CENTER,
+            }),
+          );
+          const evidences = await this.evidenceService.findAll(
+            ActivityUniqueTraitDto.create({ activityId: activity.id }),
+          );
+          for (const evidence of evidences){
+            paragraphArray.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: 'Descripción: ',
+                    bold: true,
+                  }),
+                  new TextRun({
+                    text: evidence.description,
+                  }),
+                ],
+              }),
+            );
+          }
+        }
       }
       return paragraphArray;
     };
@@ -274,7 +310,7 @@ export class CriteriaRepository {
               heading: HeadingLevel.HEADING_1,
               alignment: AlignmentType.CENTER,
             }),
-            ...buildActivitiesParagraphs(),
+            ...await build(),
           ],
         },
       ],
