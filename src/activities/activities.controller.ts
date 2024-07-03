@@ -21,6 +21,9 @@ import { ActivityUniqueTrait } from './schemas/activity-unique-trait.schema';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 import { ActivitiesService, ActivityNotFoundError } from './activities.service';
 import { ActivityFiltersDto } from './dtos/activity-filters.dto';
+import { UserUniqueTraitDto } from 'src/users/dtos/user-unique-trait.dto';
+import { UserUniqueTrait } from 'src/users/schemas/user-unique-trait.schema';
+import { ActivityWithEvidencesAndFeedbacksDto } from './dtos/activity-evidence-feedback.dto';
 
 @Controller('/activities/')
 @ApiTags('Activities')
@@ -40,9 +43,10 @@ export class ActivitiesController {
   async findOne(
     @Param()
     activityUniqueTraitDto: ActivityUniqueTraitDto,
-  ): Promise<ActivityDto> {
+  ): Promise<ActivityWithEvidencesAndFeedbacksDto> {
     const activity = await this.activitiesService.findOne(
       activityUniqueTraitDto,
+      ActivityFiltersDto.create({}),
     );
 
     if (!activity) {
@@ -100,6 +104,7 @@ export class ActivitiesController {
     try {
       const deletedActivitySchema = await this.activitiesService.delete(
         ActivityUniqueTrait.parse(activityUniqueTraitDto),
+        ActivityFiltersDto.create({}),
       );
 
       return ActivityDto.create(deletedActivitySchema);

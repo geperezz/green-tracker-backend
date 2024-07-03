@@ -6,9 +6,11 @@ import { ActivitiesRepository } from './activities.repository';
 import { EvidenceModule } from 'src/evidence/evidence.module';
 import { UnitsModule } from 'src/units/units.module';
 import { UploadPeriodModule } from 'src/upload-period/upload-period.module';
+import { EvidenceFeedbackModule } from 'src/evidence-feedback/evidence-feedback.module';
 
 @Module({
   imports: [
+    EvidenceFeedbackModule,
     EvidenceModule,
     forwardRef(() => UnitsModule),
     forwardRef(() => UploadPeriodModule),
