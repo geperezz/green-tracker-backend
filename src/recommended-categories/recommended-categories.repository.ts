@@ -237,4 +237,24 @@ export class RecommendedCategoriesRepository {
       },
     );
   }
+
+  async deleteMany(
+    filters?: RecommendedCategoryFilters,
+    transaction?: DrizzleTransaction,
+  ): Promise<RecommendedCategory[]> {
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.deleteMany(filters, transaction);
+      });
+    }
+
+    const deletedRecommendedCategories = await transaction
+      .delete(recommendedCategoriesTable)
+      .where(this.transformFiltersToWhereConditions(filters))
+      .returning();
+
+    return deletedRecommendedCategories.map((deletedRecommendedCategory) =>
+      RecommendedCategory.parse(deletedRecommendedCategory),
+    );
+  }
 }

@@ -212,9 +212,22 @@ export class UnitsService {
           transaction,
         );
 
+        await this.recommendedCategoriesRepository.deleteMany(
+          RecommendedCategoryFilters.parse({
+            unitId: newUnit.id,
+          }),
+          transaction,
+        );
         const recommendedCategories =
-          await this.recommendedCategoriesRepository.findAll(
-            RecommendedCategoryFilters.parse({ unitId: newUnit.id }),
+          await this.recommendedCategoriesRepository.createMany(
+            unitReplacementDto.recommendedCategories.map(
+              (recommendedCategory) => {
+                return RecommendedCategoryCreation.parse({
+                  ...recommendedCategory,
+                  unitId: newUnit.id,
+                });
+              },
+            ),
             transaction,
           );
 
