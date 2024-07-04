@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  Res,
   StreamableFile,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -31,15 +32,13 @@ import { CriterionIndicatorIndexDto } from './dtos/criterion-indicator-index.dto
 import { CriterionCreationDto } from './dtos/criterion-creation.dto';
 import { CriterionFilters } from './schemas/criterion-filters.schema';
 import { CriteriaService } from './criteria.service';
+import { Response } from 'express';
 
 @Controller('/indicators/:indicatorIndex/criteria/')
 @ApiTags('Criteria')
 @LoggedInAs('superadmin', 'admin')
 export class CriteriaController {
-  constructor(
-    private readonly criteriaRepository: CriteriaRepository,
-    private readonly criteriaService: CriteriaService
-  ) {}
+  constructor(private readonly criteriaService: CriteriaService) {}
 
   @Post()
   async createCriterion(
@@ -48,13 +47,12 @@ export class CriteriaController {
     @Body()
     creationDataDto: CriterionCreationDto,
   ): Promise<CriterionDto> {
-    const createdCriterionSchema =
-      await this.criteriaService.createCriterion(
-        CriterionCreation.parse({
-          ...indicatorIndexDto,
-          ...creationDataDto,
-        }),
-      );
+    const createdCriterionSchema = await this.criteriaService.createCriterion(
+      CriterionCreation.parse({
+        ...indicatorIndexDto,
+        ...creationDataDto,
+      }),
+    );
     return CriterionDto.create(createdCriterionSchema);
   }
 
@@ -79,15 +77,11 @@ export class CriteriaController {
   }
 
   @Get('/:subindex/report')
-  @Header('Content-Disposition', `attachment; filename="report.docx"`)
-  @Header(
-    'Content-Type',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  )
   @LoggedInAs('unit')
   async getReport(
     @Param()
     uniqueTraitDto: CriterionUniqueTraitDto,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
     const report = await this.criteriaService.generateReport(
       CriterionUniqueTrait.parse(uniqueTraitDto),
@@ -99,6 +93,12 @@ export class CriteriaController {
         `No existe el criterio ${uniqueTraitDto.indicatorIndex}.${uniqueTraitDto.subindex} o no tiene una categoría asociada`,
       );
     }
+
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': `attachment; filename="Criterio ${uniqueTraitDto.indicatorIndex}.${uniqueTraitDto.subindex} - Reporte.docx"`,
+    });
 
     return new StreamableFile(report);
   }
@@ -161,10 +161,9 @@ export class CriteriaController {
     uniqueTraitDto: CriterionUniqueTraitDto,
   ): Promise<CriterionDto> {
     try {
-      const deletedCriterionSchema =
-        await this.criteriaService.deleteCriterion(
-          CriterionUniqueTrait.parse(uniqueTraitDto),
-        );
+      const deletedCriterionSchema = await this.criteriaService.deleteCriterion(
+        CriterionUniqueTrait.parse(uniqueTraitDto),
+      );
 
       return CriterionDto.create(deletedCriterionSchema);
     } catch (error) {
