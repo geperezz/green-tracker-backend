@@ -16,7 +16,6 @@ import { ApiTags } from '@nestjs/swagger';
 
 import {
   CriterionNotFoundError,
-  CriteriaRepository,
 } from './criteria.repository';
 import { CriterionDto } from './dtos/criterion.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
@@ -77,7 +76,6 @@ export class CriteriaController {
   }
 
   @Get('/:subindex/report')
-  @LoggedInAs('unit')
   async getReport(
     @Param()
     uniqueTraitDto: CriterionUniqueTraitDto,
