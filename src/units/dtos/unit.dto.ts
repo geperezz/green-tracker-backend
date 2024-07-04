@@ -6,9 +6,9 @@ import { recommendedCategorySchema } from 'src/recommended-categories/schemas/re
 import { userDtoSchema } from 'src/users/dtos/user.dto';
 
 export const unitDtoSchema = userDtoSchema.omit({ role: true }).extend({
-  recommendedCategories: z
-    .array(recommendedCategorySchema.omit({ unitId: true }))
-    .min(1),
+  recommendedCategories: z.array(
+    recommendedCategorySchema.omit({ unitId: true }),
+  ),
   contributedCategories: z.array(
     recommendedCategorySchema.omit({ unitId: true }),
   ),
