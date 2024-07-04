@@ -9,9 +9,9 @@ export const unitCreationDtoSchema = userCreationDtoSchema
     role: true,
   })
   .extend({
-    recommendedCategories: z
-      .array(recommendedCategorySchema.omit({ unitId: true }))
-      .min(1),
+    recommendedCategories: z.array(
+      recommendedCategorySchema.omit({ unitId: true }),
+    ),
   });
 
 export class UnitCreationDto extends createZodDto(unitCreationDtoSchema) {}
