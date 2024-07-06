@@ -9,7 +9,12 @@ const {
   Header,
   HeadingLevel,
   AlignmentType,
+  ExternalHyperlink,
+  Tab,
+  TabLeader,
+  TabType,
 } = docx;
+import { readFileSync } from 'fs';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
 import { PaginationOptions } from 'src/pagination/schemas/pagination-options.schema';
@@ -26,6 +31,9 @@ import { UnitsService } from 'src/units/units.service';
 import { EvidenceService } from 'src/evidence/evidence.service';
 import { ActivityUniqueTraitDto } from 'src/evidence/dtos/activity-unique-trait.dto';
 import { CriteriaRepository } from './criteria.repository';
+import { paragraphStyles } from 'src/templates/report/report-styles';
+import { header } from 'src/templates/report/header';
+import { text } from 'stream/consumers';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -160,15 +168,21 @@ export class CriteriaService {
     const criterion = await this.findCriterion(uniqueTrait);
     if (!criterion || !criterion.categoryName) return null;
 
-    //cuando se vaya a main, revisar
+    const dictionary = {
+      link: 'enlace',
+      image: 'imagen',
+      document: 'archivo',
+    };
+
     const build = async () => {
       let paragraphArray = [];
 
       const units = await this.unitsService.findAll();
       for (const unit of units) {
         paragraphArray.push(
+          new Paragraph({ text: '' }),
           new Paragraph({
-            text: `Unidad: ${unit.name} - Actividades`,
+            text: `Unidad: ${unit.name}`,
             heading: HeadingLevel.HEADING_2,
             alignment: AlignmentType.CENTER,
           }),
@@ -179,17 +193,18 @@ export class CriteriaService {
             unitId: unit.id,
           }),
         );
+        if (!activities.length) paragraphArray.pop();
         for (const activity of activities) {
           paragraphArray.push(
             new Paragraph({
               text: `Actividad: ${activity.name}`,
               heading: HeadingLevel.HEADING_3,
-              alignment: AlignmentType.CENTER,
+              alignment: AlignmentType.LEFT,
             }),
             new Paragraph({
               children: [
                 new TextRun({
-                  text: 'Resumen: ',
+                  text: '\tResumen: ',
                   bold: true,
                 }),
                 new TextRun({
@@ -197,10 +212,11 @@ export class CriteriaService {
                 }),
               ],
             }),
+            new Paragraph({ text: '' }),
             new Paragraph({
-              text: `Evidencias:`,
+              text: `\tEvidencias:`,
               heading: HeadingLevel.HEADING_4,
-              alignment: AlignmentType.CENTER,
+              alignment: AlignmentType.LEFT,
             }),
           );
           const evidences = await this.evidenceService.findAll(
@@ -211,7 +227,18 @@ export class CriteriaService {
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: 'Descripción: ',
+                    text: '\t\tEvidencia: ',
+                    bold: true,
+                  }),
+                  new TextRun({
+                    text: dictionary[evidence.type],
+                  }),
+                ],
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: '\t\tDescripción: ',
                     bold: true,
                   }),
                   new TextRun({
@@ -220,6 +247,49 @@ export class CriteriaService {
                 ],
               }),
             );
+            if (evidence.type == 'image') {
+              //add image file
+              if (evidence.linkToRelatedResource) {
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: '\t\tEnlace relacionado: ',
+                      bold: true,
+                    }),
+                    new ExternalHyperlink({
+                      children: [
+                        new TextRun({
+                          text: evidence.linkToRelatedResource,
+                          style: 'Hyperlink',
+                        }),
+                      ],
+                      link: evidence.linkToRelatedResource,
+                    }),
+                  ],
+                });
+              }
+            } else {
+              paragraphArray.push(
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: '\t\tEnlace: ',
+                      bold: true,
+                    }),
+                    new ExternalHyperlink({
+                      children: [
+                        new TextRun({
+                          text: evidence.link,
+                          style: 'Hyperlink',
+                        }),
+                      ],
+                      link: evidence.link,
+                    }),
+                  ],
+                }),
+              );
+            }
+            paragraphArray.push(new Paragraph({ text: '' }));
           }
         }
       }
@@ -227,17 +297,25 @@ export class CriteriaService {
     };
 
     const doc = new Document({
+      styles: {
+        paragraphStyles: paragraphStyles,
+      },
       sections: [
         {
-          properties: {},
           headers: {
             default: new Header({
-              children: [new Paragraph('Reporte - Criterio 1')],
+              children: header,
             }),
           },
           children: [
+            new Paragraph({ text: '' }),
             new Paragraph({
-              text: 'Reporte - Criterio 1',
+              text: `Reporte`,
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER,
+            }),
+            new Paragraph({
+              text: `Criterio ${uniqueTrait.indicatorIndex}.${uniqueTrait.subindex}: ${criterion.englishName}`,
               heading: HeadingLevel.HEADING_1,
               alignment: AlignmentType.CENTER,
             }),
