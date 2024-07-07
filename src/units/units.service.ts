@@ -222,18 +222,21 @@ export class UnitsService {
           }),
           transaction,
         );
+
         const recommendedCategories =
-          await this.recommendedCategoriesRepository.createMany(
-            unitReplacementDto.recommendedCategories.map(
-              (recommendedCategory) => {
-                return RecommendedCategoryCreation.parse({
-                  ...recommendedCategory,
-                  unitId: newUnit.id,
-                });
-              },
-            ),
-            transaction,
-          );
+          unitReplacementDto.recommendedCategories.length > 0
+            ? await this.recommendedCategoriesRepository.createMany(
+                unitReplacementDto.recommendedCategories.map(
+                  (recommendedCategory) => {
+                    return RecommendedCategoryCreation.parse({
+                      ...recommendedCategory,
+                      unitId: newUnit.id,
+                    });
+                  },
+                ),
+                transaction,
+              )
+            : [];
 
         const contributedActivities = await this.activitiesRepository.findMany(
           ActivityFilters.parse({ unitId: newUnit.id }),
