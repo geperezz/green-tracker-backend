@@ -63,7 +63,7 @@ export class UnitsController {
   }
 
   @LoggedInAs('unit')
-  @Get('/activities-feedbacks')
+  @Get('/me/activities-feedbacks')
   async findAllMyActivitiesWithFeedback(
     @UserFromToken()
     me: UserDto,
