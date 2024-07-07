@@ -19,9 +19,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { UploadPeriodModule } from './upload-period/upload-period.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { join } from 'path';
-import { UnitsActivitiesModule } from './units-activities/units-activities.module';
-import { UnitsEvidenceModule } from './units-evidence/units-evidence.module';
 import { EvidenceFeedbackModule } from './evidence-feedback/evidence-feedback.module';
+import { ImageEvidenceModule } from './image-evidence/image-evidence.module';
+import { DocumentEvidenceModule } from './document-evidence/document-evidence.module';
+import { LinkEvidenceModule } from './link-evidence/link-evidence.module';
 
 @Module({
   imports: [
@@ -33,14 +34,15 @@ import { EvidenceFeedbackModule } from './evidence-feedback/evidence-feedback.mo
     UsersModule,
     AdminsModule,
     UnitsModule,
-    UnitsActivitiesModule,
-    UnitsEvidenceModule,
     IndicatorsModule,
     CriteriaModule,
     CategoriesModule,
     ActivitiesModule,
     ActivitiesModule,
     EvidenceModule,
+    ImageEvidenceModule,
+    DocumentEvidenceModule,
+    LinkEvidenceModule,
     EvidenceFeedbackModule,
     UploadPeriodModule,
     RecommendedCategoriesModule,

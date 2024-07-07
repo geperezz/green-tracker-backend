@@ -19,9 +19,9 @@ export const criteriaTable = pgTable(
         onUpdate: 'cascade',
         onDelete: 'cascade',
       }),
-    subindex: integer('subindex').notNull().unique(),
-    englishName: text('english_name').notNull().unique(),
-    spanishAlias: text('spanish_alias').notNull().unique(),
+    subindex: integer('subindex').notNull(),
+    englishName: text('english_name').notNull(),
+    spanishAlias: text('spanish_alias').notNull(),
     categoryName: text('category_name'),
   },
   (criteriaTable) => {

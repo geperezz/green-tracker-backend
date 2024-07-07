@@ -4,13 +4,12 @@ import { diskStorage } from 'multer';
 import { v4 as randomUuid } from 'uuid';
 import * as path from 'path';
 
-import { ImageEvidenceRepository } from './image-evidence.repository';
-import { ImageEvidenceController } from './image-evidence.controller';
+import { DocumentEvidenceController } from './document-evidence.controller';
 import {
   EvidenceModule,
   FS_PATH_TO_EVIDENCE_FILES,
 } from 'src/evidence/evidence.module';
-import { ImageEvidenceService } from './image-evidence.service';
+import { DocumentEvidenceService } from './document-evidence.service';
 import { ActivitiesModule } from 'src/activities/activities.module';
 
 @Module({
@@ -26,8 +25,8 @@ import { ActivitiesModule } from 'src/activities/activities.module';
       }),
     }),
   ],
-  controllers: [ImageEvidenceController],
-  providers: [ImageEvidenceRepository, ImageEvidenceService],
-  exports: [ImageEvidenceRepository, ImageEvidenceService],
+  controllers: [DocumentEvidenceController],
+  providers: [DocumentEvidenceService],
+  exports: [DocumentEvidenceService],
 })
-export class ImageEvidenceModule {}
+export class DocumentEvidenceModule {}

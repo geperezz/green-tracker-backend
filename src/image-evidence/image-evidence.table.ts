@@ -14,7 +14,7 @@ export const imageEvidenceTable = pgTable(
   {
     activityId: uuid('activity_id').notNull(),
     evidenceNumber: integer('evidence_number').notNull(),
-    linkToRelatedResource: text('link_to_related_resource').notNull(),
+    linkToRelatedResource: text('link_to_related_resource'),
   },
   (imageEvidenceTable) => {
     return {
@@ -33,7 +33,9 @@ export const imageEvidenceTable = pgTable(
           evidenceTable.activityId,
           evidenceTable.evidenceNumber,
         ],
-      }),
+      })
+        .onDelete('cascade')
+        .onUpdate('cascade'),
     };
   },
 );
