@@ -43,15 +43,19 @@ export class UnitsService {
         );
 
         const recommendedCategories =
-          await this.recommendedCategoriesRepository.createMany(
-            unitCreationDto.recommendedCategories.map((recommendedCategory) => {
-              return RecommendedCategoryCreation.parse({
-                ...recommendedCategory,
-                unitId: unitAsUser.id,
-              });
-            }),
-            transaction,
-          );
+          unitCreationDto.recommendedCategories.length > 0
+            ? await this.recommendedCategoriesRepository.createMany(
+                unitCreationDto.recommendedCategories.map(
+                  (recommendedCategory) => {
+                    return RecommendedCategoryCreation.parse({
+                      ...recommendedCategory,
+                      unitId: unitAsUser.id,
+                    });
+                  },
+                ),
+                transaction,
+              )
+            : [];
 
         return UnitDto.create({
           ...unitAsUser,
