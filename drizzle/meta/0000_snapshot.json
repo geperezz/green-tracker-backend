@@ -1,5 +1,5 @@
 {
-  "id": "0e8e9469-c226-4f1f-8b3b-7c61c24bbb1c",
+  "id": "4aafd227-c6ec-4e45-802f-ddd440f8d086",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -98,6 +98,12 @@
         },
         "name": {
           "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "help_text": {
+          "name": "help_text",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -222,29 +228,7 @@
           ]
         }
       },
-      "uniqueConstraints": {
-        "criteria_subindex_unique": {
-          "name": "criteria_subindex_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "subindex"
-          ]
-        },
-        "criteria_english_name_unique": {
-          "name": "criteria_english_name_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "english_name"
-          ]
-        },
-        "criteria_spanish_alias_unique": {
-          "name": "criteria_spanish_alias_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "spanish_alias"
-          ]
-        }
-      }
+      "uniqueConstraints": {}
     },
     "public.evidence_feedback": {
       "name": "evidence_feedback",
@@ -408,7 +392,7 @@
           "name": "link_to_related_resource",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         }
       },
       "indexes": {},
@@ -425,8 +409,8 @@
             "activity_id",
             "evidence_number"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS "activities" (
 CREATE TABLE IF NOT EXISTS "categories" (
 	"indicator_index" integer NOT NULL,
 	"name" text NOT NULL,
+	"help_text" text NOT NULL,
 	CONSTRAINT "categories_indicator_index_name_pk" PRIMARY KEY("indicator_index","name")
 );
 --> statement-breakpoint
@@ -38,10 +39,7 @@ CREATE TABLE IF NOT EXISTS "criteria" (
 	"english_name" text NOT NULL,
 	"spanish_alias" text NOT NULL,
 	"category_name" text,
-	CONSTRAINT "criteria_index_subindex_pk" PRIMARY KEY("index","subindex"),
-	CONSTRAINT "criteria_subindex_unique" UNIQUE("subindex"),
-	CONSTRAINT "criteria_english_name_unique" UNIQUE("english_name"),
-	CONSTRAINT "criteria_spanish_alias_unique" UNIQUE("spanish_alias")
+	CONSTRAINT "criteria_index_subindex_pk" PRIMARY KEY("index","subindex")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "evidence_feedback" (
@@ -65,7 +63,7 @@ CREATE TABLE IF NOT EXISTS "evidence" (
 CREATE TABLE IF NOT EXISTS "image_evidence" (
 	"activity_id" uuid NOT NULL,
 	"evidence_number" integer NOT NULL,
-	"link_to_related_resource" text NOT NULL,
+	"link_to_related_resource" text,
 	CONSTRAINT "image_evidence_activity_id_evidence_number_pk" PRIMARY KEY("activity_id","evidence_number")
 );
 --> statement-breakpoint
@@ -148,7 +146,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "image_evidence" ADD CONSTRAINT "image_evidence_activity_id_evidence_number_evidence_activity_id_evidence_number_fk" FOREIGN KEY ("activity_id","evidence_number") REFERENCES "public"."evidence"("activity_id","evidence_number") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "image_evidence" ADD CONSTRAINT "image_evidence_activity_id_evidence_number_evidence_activity_id_evidence_number_fk" FOREIGN KEY ("activity_id","evidence_number") REFERENCES "public"."evidence"("activity_id","evidence_number") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
