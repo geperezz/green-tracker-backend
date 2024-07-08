@@ -43,15 +43,19 @@ export class UnitsService {
         );
 
         const recommendedCategories =
-          await this.recommendedCategoriesRepository.createMany(
-            unitCreationDto.recommendedCategories.map((recommendedCategory) => {
-              return RecommendedCategoryCreation.parse({
-                ...recommendedCategory,
-                unitId: unitAsUser.id,
-              });
-            }),
-            transaction,
-          );
+          unitCreationDto.recommendedCategories.length > 0
+            ? await this.recommendedCategoriesRepository.createMany(
+                unitCreationDto.recommendedCategories.map(
+                  (recommendedCategory) => {
+                    return RecommendedCategoryCreation.parse({
+                      ...recommendedCategory,
+                      unitId: unitAsUser.id,
+                    });
+                  },
+                ),
+                transaction,
+              )
+            : [];
 
         return UnitDto.create({
           ...unitAsUser,
@@ -212,11 +216,27 @@ export class UnitsService {
           transaction,
         );
 
+        await this.recommendedCategoriesRepository.deleteMany(
+          RecommendedCategoryFilters.parse({
+            unitId: newUnit.id,
+          }),
+          transaction,
+        );
+
         const recommendedCategories =
-          await this.recommendedCategoriesRepository.findAll(
-            RecommendedCategoryFilters.parse({ unitId: newUnit.id }),
-            transaction,
-          );
+          unitReplacementDto.recommendedCategories.length > 0
+            ? await this.recommendedCategoriesRepository.createMany(
+                unitReplacementDto.recommendedCategories.map(
+                  (recommendedCategory) => {
+                    return RecommendedCategoryCreation.parse({
+                      ...recommendedCategory,
+                      unitId: newUnit.id,
+                    });
+                  },
+                ),
+                transaction,
+              )
+            : [];
 
         const contributedActivities = await this.activitiesRepository.findMany(
           ActivityFilters.parse({ unitId: newUnit.id }),

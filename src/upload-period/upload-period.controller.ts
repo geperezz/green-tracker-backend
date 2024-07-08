@@ -6,7 +6,7 @@ import { uploadPeriodReplacement } from './schemas/upload-period-replacement.sch
 import { ApiTags } from '@nestjs/swagger';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 
-@ApiTags('UploadPeriod')
+@ApiTags('Upload Period')
 @Controller('upload-period')
 export class UploadPeriodController {
   constructor(

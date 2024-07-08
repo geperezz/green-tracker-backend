@@ -30,7 +30,7 @@ import { AdminEvidenceFeedbackCreationDtoSchema } from './dtos/admin-evidence-fe
 import { AdminEvidenceFeedbackReplacementDtoSchema } from './dtos/admin-evidence-feedback-replacement.dto';
 
 @Controller('/activity/:activityId/evidence/:evidenceNumber/feedback')
-@ApiTags('EvidenceFeedback')
+@ApiTags('Evidence Feedback')
 @LoggedInAs('superadmin', 'admin')
 export class EvidenceFeedbackController {
   constructor(

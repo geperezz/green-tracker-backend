@@ -21,11 +21,17 @@ import { UnitsPageDto } from './dtos/units-page.dto';
 import { UnitReplacementDto } from './dtos/unit-replacement.dto';
 import { UserFromToken } from 'src/auth/user-from-token.decorator';
 import { UserDto } from 'src/users/dtos/user.dto';
+import { ActivityWithEvidencesAndFeedbacksDto } from 'src/activities/dtos/activity-evidence-feedback.dto';
+import { ActivitiesService } from 'src/activities/activities.service';
+import { UserUniqueTrait } from 'src/users/schemas/user-unique-trait.schema';
 
 @Controller('/units/')
 @ApiTags('Units')
 export class UnitsController {
-  constructor(private readonly unitsService: UnitsService) {}
+  constructor(
+    private readonly unitsService: UnitsService,
+    private readonly activitiesService: ActivitiesService
+  ) {}
 
   @Post()
   @LoggedInAs('superadmin', 'admin')
@@ -54,6 +60,17 @@ export class UnitsController {
     }
 
     return unit;
+  }
+
+  @LoggedInAs('unit')
+  @Get('/me/activities-feedbacks')
+  async findAllMyActivitiesWithFeedback(
+    @UserFromToken()
+    me: UserDto,
+  ): Promise<ActivityWithEvidencesAndFeedbacksDto[] | null> {
+    return await this.activitiesService.findWithFeedbacks(
+      UserUniqueTrait.parse({id: me.id}),
+    );
   }
 
   @Get('/all/')
