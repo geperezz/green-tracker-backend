@@ -48,8 +48,8 @@ export class UnitsController {
 
     if (!unit) {
       throw new NotFoundException(
-        'Unit not found',
-        `There is no unit with id ${me.id}`,
+        'Unidad no encontrada',
+        `No hay ninguna unidad con id. ${me.id}`,
       );
     }
 
@@ -72,8 +72,8 @@ export class UnitsController {
 
     if (!unit) {
       throw new NotFoundException(
-        'Unit not found',
-        `There is no unit with id ${unitUniqueTraitDto.id}`,
+        'Unidad no encontrada',
+        `No hay ninguna unidad con id ${unitUniqueTraitDto.id}`,
       );
     }
 
@@ -104,8 +104,8 @@ export class UnitsController {
       );
     } catch (error) {
       if (error instanceof UnitNotFoundError) {
-        throw new NotFoundException('Unit not found', {
-          description: `There is no unit with id ${unitUniqueTraitDto.id}`,
+        throw new NotFoundException('Unidad no encontrada', {
+          description: `No hay ninguna unidad con id ${unitUniqueTraitDto.id}`,
           cause: error,
         });
       }
@@ -124,8 +124,8 @@ export class UnitsController {
       return await this.unitsService.delete(unitUniqueTraitDto);
     } catch (error) {
       if (error instanceof UnitNotFoundError) {
-        throw new NotFoundException('Unit not found', {
-          description: `There is no unit with id ${unitUniqueTraitDto.id}`,
+        throw new NotFoundException('Unidad no encontrada', {
+          description: `No hay ninguna unidad con id ${unitUniqueTraitDto.id}`,
           cause: error,
         });
       }

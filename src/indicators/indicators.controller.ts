@@ -64,8 +64,8 @@ export class IndicatorsController {
 
     if (!indicator) {
       throw new NotFoundException(
-        'Indicator not found',
-        `There is no indicator with index ${indicatorUniqueTraitDto.index}`,
+        'Indicador no encontrado',
+        `No hay ningún indicador con índice ${indicatorUniqueTraitDto.index}`,
       );
     }
 
@@ -86,8 +86,8 @@ export class IndicatorsController {
       );
     } catch (error) {
       if (error instanceof IndicatorNotFoundError) {
-        throw new NotFoundException('Indicator not found', {
-          description: `There is no indicator with index ${indicatorUniqueTraitDto.index}`,
+        throw new NotFoundException('Indicador no encontrado', {
+          description: `No hay ningún indicador con índice ${indicatorUniqueTraitDto.index}`,
           cause: error,
         });
       }
@@ -105,8 +105,8 @@ export class IndicatorsController {
       return await this.indicatorsService.delete(indicatorUniqueTraitDto);
     } catch (error) {
       if (error instanceof IndicatorNotFoundError) {
-        throw new NotFoundException('Indicator not found', {
-          description: `There is no indicator with index ${indicatorUniqueTraitDto.index}`,
+        throw new NotFoundException('Indicador no encontrado', {
+          description: `No hay ningún indicador con índice ${indicatorUniqueTraitDto.index}`,
           cause: error,
         });
       }

@@ -66,8 +66,8 @@ export class UnitsEvidenceController {
 
     if (!evidence) {
       throw new NotFoundException(
-        'Evidence not found',
-        `There is no evidence No. ${uniqueTraitDto.evidenceNumber} for the activity with ID ${uniqueTraitDto.activityId} done by the unit with ID ${me.id}`,
+        'Evidencia no encontrada',
+        `No hay evidencia Nro. ${uniqueTraitDto.evidenceNumber} para la actividad con ID ${uniqueTraitDto.activityId} realizado por la unidad con ID ${me.id}`,
       );
     }
 
@@ -105,14 +105,14 @@ export class UnitsEvidenceController {
       return UnitEvidenceDto.parse(newEvidence);
     } catch (error) {
       if (error instanceof EvidenceNotFoundError) {
-        throw new NotFoundException('UnitEvidence not found', {
-          description: `There is no evidence No. ${uniqueTraitDto.evidenceNumber} for the activity with ID ${uniqueTraitDto.activityId} done by the unit with ID ${me.id}`,
+        throw new NotFoundException('Unidad de Evidencia no encontrada', {
+          description: `No hay evidencia Nro. ${uniqueTraitDto.evidenceNumber} para la actividad con ID ${uniqueTraitDto.activityId} realizado por la unidad con ID ${me.id}`,
           cause: error,
         });
       }
       if (error instanceof EvidenceReplacementTypeMismatchError) {
         throw new BadRequestException('Invalid type of evidence replacement', {
-          description: `An evidence replacement of ${error.expectedType} type was expected. Received an evidence replacement of ${error.receivedType} type`,
+          description: `Un reemplazo de evidencia de ${error.expectedType} Se esperaba el tipo. Recibió un reemplazo de evidencia de ${error.receivedType} Tipo`,
           cause: error,
         });
       }
@@ -132,8 +132,8 @@ export class UnitsEvidenceController {
       return UnitEvidenceDto.parse(deletedEvidence);
     } catch (error) {
       if (error instanceof EvidenceNotFoundError) {
-        throw new NotFoundException('UnitEvidence not found', {
-          description: `There is no evidence No. ${uniqueTraitDto.evidenceNumber} for the activity with ID ${uniqueTraitDto.activityId} done by the unit with ID ${me.id}`,
+        throw new NotFoundException('Unidad de Evidencia no encontrada', {
+          description: `No hay evidencia Nro. ${uniqueTraitDto.evidenceNumber} Para la actividad con ID ${uniqueTraitDto.activityId} realizado por la unidad con ID ${me.id}`,
           cause: error,
         });
       }
