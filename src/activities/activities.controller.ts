@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -21,13 +22,13 @@ import { ActivityUniqueTrait } from './schemas/activity-unique-trait.schema';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 import { ActivitiesService, ActivityNotFoundError } from './activities.service';
 import { ActivityFiltersDto } from './dtos/activity-filters.dto';
-import { UserUniqueTraitDto } from 'src/users/dtos/user-unique-trait.dto';
-import { UserUniqueTrait } from 'src/users/schemas/user-unique-trait.schema';
 import { ActivityWithEvidencesAndFeedbacksDto } from './dtos/activity-evidence-feedback.dto';
+import { UserFromToken } from 'src/auth/user-from-token.decorator';
+import { UserDto } from 'src/users/dtos/user.dto';
 
 @Controller('/activities/')
 @ApiTags('Activities')
-@LoggedInAs('superadmin', 'admin')
+@LoggedInAs('superadmin', 'admin', 'unit')
 export class ActivitiesController {
   constructor(private readonly activitiesService: ActivitiesService) {}
 
@@ -78,45 +79,67 @@ export class ActivitiesController {
     activityUniqueTraitDto: ActivityUniqueTraitDto,
     @Body()
     replacementDataDto: ActivityReplacementDto,
+    @UserFromToken()
+    user: UserDto,
   ): Promise<ActivityDto> {
-    try {
-      return await this.activitiesService.replace(
+    if (user.role === 'unit') {
+      const activity = await this.activitiesService.findOne(
         activityUniqueTraitDto,
-        replacementDataDto,
+        ActivityFiltersDto.create({}),
       );
-    } catch (error) {
-      if (error instanceof ActivityNotFoundError) {
-        throw new NotFoundException('Activity not found', {
-          description: `There is no activity with id ${activityUniqueTraitDto.id}`,
-          cause: error,
-        });
+
+      if (!activity) {
+        throw new NotFoundException(
+          'Activity not found',
+          `There is no activity with ID ${activityUniqueTraitDto.id}`,
+        );
       }
 
-      throw error;
+      if (activity.unitId !== user.id) {
+        throw new ForbiddenException(
+          `You are not allowed to update activities that are not yours`,
+        );
+      }
     }
+
+    return await this.activitiesService.replace(
+      activityUniqueTraitDto,
+      replacementDataDto,
+    );
   }
 
   @Delete('/:id/')
   async delete(
     @Param()
     activityUniqueTraitDto: ActivityUniqueTraitDto,
+    @UserFromToken()
+    user: UserDto,
   ): Promise<ActivityDto> {
-    try {
-      const deletedActivitySchema = await this.activitiesService.delete(
-        ActivityUniqueTrait.parse(activityUniqueTraitDto),
+    if (user.role === 'unit') {
+      const activity = await this.activitiesService.findOne(
+        activityUniqueTraitDto,
         ActivityFiltersDto.create({}),
       );
 
-      return ActivityDto.create(deletedActivitySchema);
-    } catch (error) {
-      if (error instanceof ActivityNotFoundError) {
-        throw new NotFoundException('Activity not found', {
-          description: `There is no activity with id ${activityUniqueTraitDto.id}`,
-          cause: error,
-        });
+      if (!activity) {
+        throw new NotFoundException(
+          'Activity not found',
+          `There is no activity with ID ${activityUniqueTraitDto.id}`,
+        );
       }
 
-      throw error;
+      if (activity.unitId !== user.id) {
+        throw new ForbiddenException(
+          `You are not allowed to delete activities that are not yours`,
+        );
+      }
     }
+
+    const deletedActivitySchema = await this.activitiesService.delete(
+      ActivityUniqueTrait.parse(activityUniqueTraitDto),
+      ActivityFiltersDto.create({}),
+    );
+
+    return ActivityDto.create(deletedActivitySchema);
   }
 }
