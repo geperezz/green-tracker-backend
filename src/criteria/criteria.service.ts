@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-
 const docx = require('docx');
 const {
   Document,
@@ -10,9 +9,7 @@ const {
   HeadingLevel,
   AlignmentType,
   ExternalHyperlink,
-  Tab,
-  TabLeader,
-  TabType,
+  ImageRun,
 } = docx;
 import { readFileSync } from 'fs';
 
@@ -33,7 +30,8 @@ import { ActivityUniqueTraitDto } from 'src/evidence/dtos/activity-unique-trait.
 import { CriteriaRepository } from './criteria.repository';
 import { paragraphStyles } from 'src/templates/report/report-styles';
 import { header } from 'src/templates/report/header';
-import { text } from 'stream/consumers';
+import { Config } from 'src/config/config.loader';
+import { imageResize } from 'src/templates/report/image-resize';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -41,6 +39,8 @@ export class CriterionNotFoundError extends CriteriaRepositoryError {}
 @Injectable()
 export class CriteriaService {
   constructor(
+    @Inject('CONFIG')
+    private readonly config: Config,
     @Inject('DRIZZLE_CLIENT')
     private readonly drizzleClient: DrizzleClient,
     private readonly criteriaRepository: CriteriaRepository,
@@ -168,6 +168,8 @@ export class CriteriaService {
     const criterion = await this.findCriterion(uniqueTrait);
     if (!criterion || !criterion.categoryName) return null;
 
+    const url = process.env.URL_BACKEND;
+
     const dictionary = {
       link: 'enlace',
       image: 'imagen',
@@ -193,6 +195,7 @@ export class CriteriaService {
             unitId: unit.id,
           }),
         );
+        //if unit has no activities, dont show in report
         if (!activities.length) paragraphArray.pop();
         for (const activity of activities) {
           paragraphArray.push(
@@ -222,12 +225,23 @@ export class CriteriaService {
           const evidences = await this.evidenceService.findAll(
             ActivityUniqueTraitDto.create({ activityId: activity.id }),
           );
+          if (!evidences.length) {
+            paragraphArray.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: '\t\tNo hay evidencias para esta actividad.',
+                  }),
+                ],
+              }),
+            );
+          }
           for (const evidence of evidences) {
             paragraphArray.push(
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: '\t\tEvidencia: ',
+                    text: '\t\tTipo de evidencia: ',
                     bold: true,
                   }),
                   new TextRun({
@@ -247,49 +261,87 @@ export class CriteriaService {
                 ],
               }),
             );
+
+            //if it is an external link, show as is. Else, show with current URL_BACKEND
+            const link =
+              evidence.type == 'link'
+                ? evidence.link
+                : `${url}${evidence.link}`;
+            paragraphArray.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: '\t\tEnlace: ',
+                    bold: true,
+                  }),
+                  new ExternalHyperlink({
+                    children: [
+                      new TextRun({
+                        text: link,
+                        style: 'Hyperlink',
+                      }),
+                    ],
+                    link: link,
+                  }),
+                ],
+              }),
+            );
+
             if (evidence.type == 'image') {
-              //add image file
+              const [width, height] = imageResize(`dist${evidence.link}`);
               if (evidence.linkToRelatedResource) {
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: '\t\tEnlace relacionado: ',
-                      bold: true,
-                    }),
-                    new ExternalHyperlink({
-                      children: [
-                        new TextRun({
-                          text: evidence.linkToRelatedResource,
-                          style: 'Hyperlink',
-                        }),
-                      ],
-                      link: evidence.linkToRelatedResource,
-                    }),
-                  ],
-                });
+                paragraphArray.push(
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: '\t\tEnlace relacionado: ',
+                        bold: true,
+                      }),
+                      new ExternalHyperlink({
+                        children: [
+                          new TextRun({
+                            text: evidence.linkToRelatedResource,
+                            style: 'Hyperlink',
+                          }),
+                        ],
+                        link: evidence.linkToRelatedResource,
+                      }),
+                    ],
+                  }),
+                );
               }
-            } else {
               paragraphArray.push(
                 new Paragraph({
+                  alignment: AlignmentType.CENTER,
                   children: [
-                    new TextRun({
-                      text: '\t\tEnlace: ',
-                      bold: true,
-                    }),
-                    new ExternalHyperlink({
-                      children: [
-                        new TextRun({
-                          text: evidence.link,
-                          style: 'Hyperlink',
-                        }),
-                      ],
-                      link: evidence.link,
+                    new ImageRun({
+                      data: readFileSync(`dist${evidence.link}`),
+                      transformation: {
+                        width: width,
+                        height: height,
+                      },
                     }),
                   ],
                 }),
               );
             }
-            paragraphArray.push(new Paragraph({ text: '' }));
+            //evidences divider
+            paragraphArray.push(
+              new Paragraph({
+                text: '',
+              }),
+              new Paragraph({
+                text: '',
+                border: {
+                  top: {
+                    color: 'auto',
+                    space: 1,
+                    style: 'single',
+                    size: 6,
+                  },
+                },
+              }),
+            );
           }
         }
       }
