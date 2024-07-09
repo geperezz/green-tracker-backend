@@ -258,59 +258,35 @@ export class ActivitiesService {
     );
   }
 
-  async findWithFeedbacks(
+  async findAllWithFeedbacks(
     unitUniqueTrait: UserUniqueTrait,
     transaction?: DrizzleTransaction,
-  ): Promise<ActivityWithEvidencesAndFeedbacks[] | null> {
+  ): Promise<ActivityWithEvidencesAndFeedbacks[]> {
     if (transaction === undefined) {
       return await this.drizzleClient.transaction(async (transaction) => {
-        return await this.findWithFeedbacks(unitUniqueTrait, transaction);
+        return await this.findAllWithFeedbacks(unitUniqueTrait, transaction);
       });
     }
 
-    const activities = await transaction.select().from(activitiesTable);
+    const activities = await transaction
+      .select()
+      .from(activitiesTable)
+      .where(eq(activitiesTable.unitId, unitUniqueTrait.id));
+    if (!activities) return [];
 
-    if (!activities) return null;
-
-    const activitiesWithEvidenceAndFeedbacks = await Promise.all(
+    const TactivitiesWithEvidenceAndFeedbacks = await Promise.all(
       activities.map(async (activity) => {
-        const evidences = await transaction
-          .select()
-          .from(evidenceTable)
-          .where(eq(evidenceTable.activityId, activity.id));
-
-        const evidenceWithFeedbacks = await Promise.all(
-          evidences.map(async (evidence) => {
-            const feedbacks = await transaction
-              .select()
-              .from(evidenceFeedbackTable)
-              .where(
-                and(
-                  eq(evidenceFeedbackTable.activityId, evidence.activityId),
-                  eq(
-                    evidenceFeedbackTable.evidenceNumber,
-                    evidence.evidenceNumber,
-                  ),
-                ),
-              );
-
-            return {
-              ...evidence,
-              feedbacks: feedbacks.map((feedback) => ({
-                ...feedback,
-              })),
-            };
-          }),
+        const activityWithEvidenceAndFeedbacks = await this.findOne(
+          ActivityUniqueTraitDto.create({ id: activity.id }),
+          ActivityFiltersDto.create({}),
         );
-
-        return ActivityWithEvidencesAndFeedbacks.parse({
-          ...activity,
-          evidences: evidenceWithFeedbacks,
-        });
+        return activityWithEvidenceAndFeedbacks;
       }),
     );
 
-    return activitiesWithEvidenceAndFeedbacks;
+    return TactivitiesWithEvidenceAndFeedbacks.filter(
+      (activity) => activity !== null,
+    ) as ActivityWithEvidencesAndFeedbacks[];
   }
 
   @Cron(CronExpression.EVERY_WEEK)

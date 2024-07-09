@@ -68,7 +68,7 @@ export class UnitsController {
     @UserFromToken()
     me: UserDto,
   ): Promise<ActivityWithEvidencesAndFeedbacksDto[] | null> {
-    return await this.activitiesService.findWithFeedbacks(
+    return await this.activitiesService.findAllWithFeedbacks(
       UserUniqueTrait.parse({id: me.id}),
     );
   }
