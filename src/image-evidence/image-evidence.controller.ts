@@ -57,7 +57,7 @@ export class ImageEvidenceController {
     creationDataDto: ImageEvidenceCreationDto,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new FileTypeValidator({ fileType: /image\/(jpeg|png)/ })],
+        validators: [new FileTypeValidator({ fileType: /image\/.+/ })],
       }),
     )
     imageFile: Express.Multer.File,
@@ -127,7 +127,7 @@ export class ImageEvidenceController {
     replacementDataDto: ImageEvidenceReplacementDto,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new FileTypeValidator({ fileType: /image\/(jpeg|png)/ })],
+        validators: [new FileTypeValidator({ fileType: /image\/.+/ })],
       }),
     )
     imageFile: Express.Multer.File,
