@@ -261,7 +261,7 @@ export class ActivitiesService {
   async findAllWithFeedbacks(
     unitUniqueTrait: UserUniqueTrait,
     transaction?: DrizzleTransaction,
-  ): Promise<ActivityWithEvidencesAndFeedbacks[]> {
+  ): Promise<ActivityWithEvidencesAndFeedbacksDto[]> {
     if (transaction === undefined) {
       return await this.drizzleClient.transaction(async (transaction) => {
         return await this.findAllWithFeedbacks(unitUniqueTrait, transaction);
@@ -286,7 +286,7 @@ export class ActivitiesService {
 
     return TactivitiesWithEvidenceAndFeedbacks.filter(
       (activity) => activity !== null,
-    ) as ActivityWithEvidencesAndFeedbacks[];
+    ) as ActivityWithEvidencesAndFeedbacksDto[];
   }
 
   @Cron(CronExpression.EVERY_WEEK)
@@ -324,6 +324,8 @@ export class ActivitiesService {
           });
         }
       });
-    } catch (error) {}
+    } catch (error) {
+      throw error;
+    }
   }
 }
