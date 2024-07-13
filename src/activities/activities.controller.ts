@@ -25,6 +25,8 @@ import { ActivityFiltersDto } from './dtos/activity-filters.dto';
 import { ActivityWithEvidencesAndFeedbacksDto } from './dtos/activity-evidence-feedback.dto';
 import { UserFromToken } from 'src/auth/user-from-token.decorator';
 import { UserDto } from 'src/users/dtos/user.dto';
+import { EvidenceFeedback } from 'src/evidence-feedback/schemas/evidence-feedback.schema';
+import { EvidenceFeedbackDto } from 'src/evidence-feedback/dtos/evidence-feedback.dto';
 
 @Controller('/activities/')
 @ApiTags('Activities')
@@ -141,5 +143,43 @@ export class ActivitiesController {
     );
 
     return ActivityDto.create(deletedActivitySchema);
+  }
+
+  @Delete('/:id/feedbacks')
+  async deleteAllFeedbacks(
+    @Param()
+    activityUniqueTraitDto: ActivityUniqueTraitDto,
+    @UserFromToken()
+    user: UserDto,
+  ): Promise<EvidenceFeedbackDto[]> {
+    if (user.role === 'unit') {
+      const activity = await this.activitiesService.findOne(
+        activityUniqueTraitDto,
+        ActivityFiltersDto.create({}),
+      );
+
+      if (!activity) {
+        throw new NotFoundException(
+          'Activity not found',
+          `There is no activity with ID ${activityUniqueTraitDto.id}`,
+        );
+      }
+
+      if (activity.unitId !== user.id) {
+        throw new ForbiddenException(
+          `You are not allowed to delete feeedbacks in activities that are not yours`,
+        );
+      }
+    }
+
+    const deletedFeedbacks = await this.activitiesService.deleteAllFeedbacks(
+      ActivityUniqueTrait.parse(activityUniqueTraitDto),
+    );
+
+    return await Promise.all(
+      deletedFeedbacks.map((feedback) =>
+        EvidenceFeedbackDto.create(feedback),
+      ),
+    );
   }
 }

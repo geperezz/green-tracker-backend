@@ -8,6 +8,7 @@ import { EvidenceFeedback } from './schemas/evidence-feedback.schema';
 import { EvidenceFeedbackUniqueTrait } from './schemas/evidence-feedback-unique-trait.schema';
 import { EvidenceUniqueTrait } from 'src/evidence/schemas/evidence-unique-trait.schema';
 import { EvidenceFeedbackReplacement } from './schemas/evidence-feedback-replacement.schema';
+import { ActivityUniqueTrait } from 'src/activities/schemas/activity-unique-trait.schema';
 
 export abstract class EvidenceFeedbackRepositoryError extends Error {}
 export class EvidenceFeedbackNotFoundError extends EvidenceFeedbackRepositoryError {}
@@ -102,6 +103,32 @@ export class EvidenceFeedbackRepository {
     }
 
     return EvidenceFeedback.parse(deletedEvidenceFeedback);
+  }
+
+  async deleteAllInActivity(
+    activityUniqueTrait: ActivityUniqueTrait,
+    transaction?: DrizzleTransaction,
+  ): Promise<EvidenceFeedback[]> {
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.deleteAllInActivity(activityUniqueTrait, transaction);
+      });
+    }
+
+    const deletedEvidenceFeedback = await transaction
+      .delete(evidenceFeedbackTable)
+      .where(eq(evidenceFeedbackTable.activityId, activityUniqueTrait.id))
+      .returning();
+
+    if (!deletedEvidenceFeedback) {
+      throw new EvidenceFeedbackNotFoundError();
+    }
+
+    return await Promise.all(
+      deletedEvidenceFeedback.map((feedback) =>
+        EvidenceFeedback.parse(feedback),
+      ),
+    );
   }
 
   async findAll(
