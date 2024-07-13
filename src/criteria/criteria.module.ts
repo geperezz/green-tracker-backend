@@ -12,7 +12,6 @@ import { CriteriaService } from './criteria.service';
     ActivitiesModule,
     UnitsModule,
     EvidenceModule,
-    //IndicatorsModule,
     forwardRef(() => IndicatorsModule),
   ],
   controllers: [CriteriaController],

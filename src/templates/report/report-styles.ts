@@ -44,3 +44,10 @@ export const paragraphStyles = [
     },
   },
 ];
+
+export const margin = {
+  top: 1552,
+  right: 1020,
+  bottom: 1020,
+  left: 1020,
+};

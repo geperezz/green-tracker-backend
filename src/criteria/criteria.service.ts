@@ -28,11 +28,12 @@ import { UnitsService } from 'src/units/units.service';
 import { EvidenceService } from 'src/evidence/evidence.service';
 import { ActivityUniqueTraitDto } from 'src/evidence/dtos/activity-unique-trait.dto';
 import { CriteriaRepository } from './criteria.repository';
-import { paragraphStyles } from 'src/templates/report/report-styles';
+import { margin, paragraphStyles } from 'src/templates/report/report-styles';
 import { header } from 'src/templates/report/header';
 import { imageResize } from 'src/templates/report/image-resize';
 import { IndicatorsRepository } from 'src/indicators/indicators.repository';
 import { IndicatorUniqueTrait } from 'src/indicators/schemas/indicator-unique-trait.schema';
+import { universityInfo } from 'src/templates/report/universityInfo';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -359,12 +360,7 @@ export class CriteriaService {
         {
           properties: {
             page: {
-              margin: {
-                top: 1552,
-                right: 1020,
-                bottom: 1020,
-                left: 1020,
-              },
+              margin: margin,
             },
           },
           headers: {
@@ -373,49 +369,7 @@ export class CriteriaService {
             }),
           },
           children: [
-            new Paragraph({
-              text: `Template for Evidence(s)`,
-              heading: HeadingLevel.HEADING_1,
-              alignment: AlignmentType.CENTER,
-            }),
-            new Paragraph({
-              text: `UI GreenMetric Questionnaire`,
-              heading: HeadingLevel.HEADING_1,
-              alignment: AlignmentType.CENTER,
-            }),
-            new Paragraph({ text: '' }),
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: 'University	:	Andres Bello Guayana Catholic University',
-                }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: 'Country		:	Venezuela',
-                }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: 'Web Address	:	',
-                }),
-                new ExternalHyperlink({
-                  children: [
-                    new TextRun({
-                      text: 'http://guayanaweb.ucab.edu.ve/',
-                      style: 'Hyperlink',
-                    }),
-                  ],
-                  link: 'http://guayanaweb.ucab.edu.ve/',
-                }),
-              ],
-            }),
-            new Paragraph({ text: '' }),
-            new Paragraph({ text: '' }),
+            ...universityInfo,
             new Paragraph({
               text: `[${uniqueTrait.indicatorIndex}] ${indicator?.englishName}`,
               heading: HeadingLevel.HEADING_2,
