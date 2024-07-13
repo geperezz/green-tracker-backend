@@ -33,6 +33,8 @@ import { UserUniqueTrait } from 'src/users/schemas/user-unique-trait.schema';
 import { ActivityWithEvidencesAndFeedbacksDto } from './dtos/activity-evidence-feedback.dto';
 import { EvidenceFeedbackRepository } from 'src/evidence-feedback/evidence-feedback.repository';
 import { EvidenceUniqueTrait } from 'src/evidence/schemas/evidence-unique-trait.schema';
+import { EvidenceFeedback } from 'src/evidence-feedback/schemas/evidence-feedback.schema';
+import { EvidenceFeedbackDto } from 'src/evidence-feedback/dtos/evidence-feedback.dto';
 
 export abstract class ActivitiesServiceError extends Error {}
 export class ActivityNotFoundError extends ActivitiesServiceError {}
@@ -287,6 +289,25 @@ export class ActivitiesService {
     return TactivitiesWithEvidenceAndFeedbacks.filter(
       (activity) => activity !== null,
     ) as ActivityWithEvidencesAndFeedbacksDto[];
+  }
+
+  async deleteAllFeedbacks(
+    activityUniqueTraitDto: ActivityUniqueTraitDto,
+    transaction?: DrizzleTransaction,
+  ): Promise<EvidenceFeedbackDto[]> {
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.deleteAllFeedbacks(
+          activityUniqueTraitDto,
+          transaction,
+        );
+      });
+    }
+
+    return await this.evidenceFeedbackRepository.deleteAllInActivity(
+      ActivityUniqueTrait.parse(activityUniqueTraitDto),
+      transaction,
+    );
   }
 
   @Cron(CronExpression.EVERY_WEEK)

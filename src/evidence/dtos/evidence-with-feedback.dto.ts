@@ -6,18 +6,16 @@ import { evidenceFeedbackDtoSchema } from 'src/evidence-feedback/dtos/evidence-f
 
 export const evidenceWithFeedbackDtoSchema = z.discriminatedUnion('type', [
   evidenceSchema
+    .merge(imageEvidenceSchema)
     .extend({
       type: z.literal('image'),
       feedbacks: z.array(evidenceFeedbackDtoSchema),
     })
-    .merge(imageEvidenceSchema)
     .omit({ activityId: true }),
-  evidenceSchema
-    .omit({ activityId: true })
-    .extend({
-      type: z.enum(['document', 'link']),
-      feedbacks: z.array(evidenceFeedbackDtoSchema),
-    }),
+  evidenceSchema.omit({ activityId: true }).extend({
+    type: z.enum(['document', 'link']),
+    feedbacks: z.array(evidenceFeedbackDtoSchema),
+  }),
 ]);
 
 export const EvidenceWithFeedbackDto = evidenceWithFeedbackDtoSchema.brand(
