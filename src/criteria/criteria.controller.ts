@@ -3,17 +3,19 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   NotFoundException,
   Param,
   Post,
   Put,
   Query,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import {
   CriterionNotFoundError,
-  CriteriaRepository,
 } from './criteria.repository';
 import { CriterionDto } from './dtos/criterion.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
@@ -28,12 +30,14 @@ import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 import { CriterionIndicatorIndexDto } from './dtos/criterion-indicator-index.dto';
 import { CriterionCreationDto } from './dtos/criterion-creation.dto';
 import { CriterionFilters } from './schemas/criterion-filters.schema';
+import { CriteriaService } from './criteria.service';
+import { Response } from 'express';
 
 @Controller('/indicators/:indicatorIndex/criteria/')
 @ApiTags('Criteria')
 @LoggedInAs('superadmin', 'admin')
 export class CriteriaController {
-  constructor(private readonly criteriaRepository: CriteriaRepository) {}
+  constructor(private readonly criteriaService: CriteriaService) {}
 
   @Post()
   async createCriterion(
@@ -42,13 +46,12 @@ export class CriteriaController {
     @Body()
     creationDataDto: CriterionCreationDto,
   ): Promise<CriterionDto> {
-    const createdCriterionSchema =
-      await this.criteriaRepository.createCriterion(
-        CriterionCreation.parse({
-          ...indicatorIndexDto,
-          ...creationDataDto,
-        }),
-      );
+    const createdCriterionSchema = await this.criteriaService.createCriterion(
+      CriterionCreation.parse({
+        ...indicatorIndexDto,
+        ...creationDataDto,
+      }),
+    );
     return CriterionDto.create(createdCriterionSchema);
   }
 
@@ -58,7 +61,7 @@ export class CriteriaController {
     @Param()
     uniqueTraitDto: CriterionUniqueTraitDto,
   ): Promise<CriterionDto> {
-    const criterionSchema = await this.criteriaRepository.findCriterion(
+    const criterionSchema = await this.criteriaService.findCriterion(
       CriterionUniqueTrait.parse(uniqueTraitDto),
     );
 
@@ -72,6 +75,32 @@ export class CriteriaController {
     return CriterionDto.create(criterionSchema);
   }
 
+  @Get('/:subindex/report')
+  async getReport(
+    @Param()
+    uniqueTraitDto: CriterionUniqueTraitDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const report = await this.criteriaService.generateReport(
+      CriterionUniqueTrait.parse(uniqueTraitDto),
+    );
+
+    if (!report) {
+      throw new NotFoundException(
+        'Criterio no encontrado',
+        `No existe el criterio ${uniqueTraitDto.indicatorIndex}.${uniqueTraitDto.subindex} o no tiene una categoría asociada`,
+      );
+    }
+
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': `attachment; filename="Criterio ${uniqueTraitDto.indicatorIndex}.${uniqueTraitDto.subindex} - Reporte.docx"`,
+    });
+
+    return new StreamableFile(report);
+  }
+
   @Get()
   @LoggedInAs('unit')
   async findCriteriaPage(
@@ -80,7 +109,7 @@ export class CriteriaController {
     @Query()
     paginationOptionsDto: PaginationOptionsDto,
   ): Promise<CriteriaPageDto> {
-    const criteriaSchemasPage = await this.criteriaRepository.findCriteriaPage(
+    const criteriaSchemasPage = await this.criteriaService.findCriteriaPage(
       PaginationOptions.parse(paginationOptionsDto),
       CriterionFilters.parse(indicatorIndexDto),
     );
@@ -103,7 +132,7 @@ export class CriteriaController {
     replacementDataDto: CriterionReplacementDto,
   ): Promise<CriterionDto> {
     try {
-      const newCriterionSchema = await this.criteriaRepository.replaceCriterion(
+      const newCriterionSchema = await this.criteriaService.replaceCriterion(
         CriterionUniqueTrait.parse(uniqueTraitDto),
         CriterionReplacement.parse({
           ...replacementDataDto,
@@ -130,10 +159,9 @@ export class CriteriaController {
     uniqueTraitDto: CriterionUniqueTraitDto,
   ): Promise<CriterionDto> {
     try {
-      const deletedCriterionSchema =
-        await this.criteriaRepository.deleteCriterion(
-          CriterionUniqueTrait.parse(uniqueTraitDto),
-        );
+      const deletedCriterionSchema = await this.criteriaService.deleteCriterion(
+        CriterionUniqueTrait.parse(uniqueTraitDto),
+      );
 
       return CriterionDto.create(deletedCriterionSchema);
     } catch (error) {
