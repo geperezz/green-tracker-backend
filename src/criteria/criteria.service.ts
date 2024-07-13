@@ -30,8 +30,9 @@ import { ActivityUniqueTraitDto } from 'src/evidence/dtos/activity-unique-trait.
 import { CriteriaRepository } from './criteria.repository';
 import { paragraphStyles } from 'src/templates/report/report-styles';
 import { header } from 'src/templates/report/header';
-import { Config } from 'src/config/config.loader';
 import { imageResize } from 'src/templates/report/image-resize';
+import { IndicatorsRepository } from 'src/indicators/indicators.repository';
+import { IndicatorUniqueTrait } from 'src/indicators/schemas/indicator-unique-trait.schema';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -39,14 +40,13 @@ export class CriterionNotFoundError extends CriteriaRepositoryError {}
 @Injectable()
 export class CriteriaService {
   constructor(
-    @Inject('CONFIG')
-    private readonly config: Config,
     @Inject('DRIZZLE_CLIENT')
     private readonly drizzleClient: DrizzleClient,
     private readonly criteriaRepository: CriteriaRepository,
     private readonly activitiesService: ActivitiesService,
     private readonly unitsService: UnitsService,
     private readonly evidenceService: EvidenceService,
+    private readonly indicatorsRepository: IndicatorsRepository,
   ) {}
 
   async createCriterion(
@@ -167,6 +167,9 @@ export class CriteriaService {
   ): Promise<Buffer | null> {
     const criterion = await this.findCriterion(uniqueTrait);
     if (!criterion || !criterion.categoryName) return null;
+    const indicator = await this.indicatorsRepository.findOne(
+      IndicatorUniqueTrait.parse({ index: criterion.indicatorIndex }),
+    );
 
     const url = process.env.URL_BACKEND;
 
@@ -354,20 +357,80 @@ export class CriteriaService {
       },
       sections: [
         {
+          properties: {
+            page: {
+              margin: {
+                top: 1552,
+                right: 1020,
+                bottom: 1020,
+                left: 1020,
+              },
+            },
+          },
           headers: {
             default: new Header({
               children: header,
             }),
           },
           children: [
-            new Paragraph({ text: '' }),
             new Paragraph({
-              text: `Reporte`,
+              text: `Template for Evidence(s)`,
               heading: HeadingLevel.HEADING_1,
               alignment: AlignmentType.CENTER,
             }),
             new Paragraph({
-              text: `Criterio ${uniqueTrait.indicatorIndex}.${uniqueTrait.subindex}: ${criterion.englishName}`,
+              text: `UI GreenMetric Questionnaire`,
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER,
+            }),
+            new Paragraph({ text: '' }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'University	:	Andres Bello Guayana Catholic University',
+                }),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'Country		:	Venezuela',
+                }),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'Web Address	:	',
+                }),
+                new ExternalHyperlink({
+                  children: [
+                    new TextRun({
+                      text: 'http://guayanaweb.ucab.edu.ve/',
+                      style: 'Hyperlink',
+                    }),
+                  ],
+                  link: 'http://guayanaweb.ucab.edu.ve/',
+                }),
+              ],
+            }),
+            new Paragraph({ text: '' }),
+            new Paragraph({ text: '' }),
+            new Paragraph({
+              text: `[${uniqueTrait.indicatorIndex}] ${indicator?.englishName}`,
+              heading: HeadingLevel.HEADING_2,
+              alignment: AlignmentType.LEFT,
+            }),
+            new Paragraph({
+              text: ``,
+            }),
+            new Paragraph({
+              text: `[${uniqueTrait.indicatorIndex}.${uniqueTrait.subindex}] ${criterion.englishName}`,
+              heading: HeadingLevel.HEADING_2,
+              alignment: AlignmentType.LEFT,
+            }),
+            new Paragraph({
+              text: `Reporte`,
               heading: HeadingLevel.HEADING_1,
               alignment: AlignmentType.CENTER,
             }),

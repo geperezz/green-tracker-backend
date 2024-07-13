@@ -24,8 +24,8 @@ export const header = [
       new ImageRun({
         data: readFileSync('src/templates/report/assets/greenmetricLogo.png'),
         transformation: {
-          width: 110,
-          height: 83,
+          width: 115,
+          height: 99,
         },
         floating: {
           horizontalPosition: {

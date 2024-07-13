@@ -3,15 +3,15 @@ export const paragraphStyles = [
     name: 'Normal',
     run: {
       size: 22,
-      font: 'Arial',
+      font: 'Calibri',
       color: '000000',
     },
   },
   {
     name: 'Heading 1',
     run: {
-      size: 28,
-      font: 'Arial',
+      size: 36,
+      font: 'Calibri',
       color: '000000',
       bold: true,
     },
@@ -20,7 +20,7 @@ export const paragraphStyles = [
     name: 'Heading 2',
     run: {
       size: 22,
-      font: 'Arial',
+      font: 'Calibri',
       color: '000000',
       bold: true,
     },
@@ -29,7 +29,7 @@ export const paragraphStyles = [
     name: 'Heading 3',
     run: {
       size: 22,
-      font: 'Arial',
+      font: 'Calibri',
       color: '000000',
       bold: true,
     },
@@ -38,7 +38,7 @@ export const paragraphStyles = [
     name: 'Heading 4',
     run: {
       size: 22,
-      font: 'Arial',
+      font: 'Calibri',
       color: '000000',
       bold: true,
     },
