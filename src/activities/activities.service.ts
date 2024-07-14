@@ -319,34 +319,42 @@ export class ActivitiesService {
       const uploadPeriod = await this.uploadPeriodService.findAll();
       if (!uploadPeriod) return;
 
+      const unitsWithoutActivitiesEmails: string[] = [];
       const units = await this.unitsService.findAll();
-      units.forEach(async (unit) => {
+
+      for (const unit of units) {
         const activities = await this.findAllCurrent(
           ActivityFilters.parse({ unitId: unit.id }),
         );
 
         if (!activities.length) {
-          await this.mailerService.sendMail({
-            to: unit.email,
-            subject: `Recuerde subir sus actividades - GreenTracker`,
-            template: './endReminder',
-            context: {
-              unit: unit.name,
-              endTimestamp:
-                uploadPeriod.endTimestamp.toLocaleDateString('es-ES'),
-            },
-            attachments: [
-              {
-                filename: 'logo.png',
-                path: 'src/templates/assets/logo.png',
-                cid: 'logo',
-              },
-            ],
-          });
+          unitsWithoutActivitiesEmails.push(unit.email);
         }
+      }
+
+      if (!unitsWithoutActivitiesEmails.length) return;
+
+      await this.mailerService.sendMail({
+        to: unitsWithoutActivitiesEmails,
+        subject: `Recuerde subir sus actividades - GreenTracker`,
+        template: './endReminder',
+        context: {
+          unit: 'unidad',
+          endTimestamp: uploadPeriod.endTimestamp.toLocaleDateString('es-ES'),
+        },
+        attachments: [
+          {
+            filename: 'logo.png',
+            path: 'src/templates/assets/logo.png',
+            cid: 'logo',
+          },
+        ],
       });
     } catch (error) {
-      throw error;
+      throw new Error(
+        'An unexpected situation ocurred while sending the before deadline reminder emails',
+        error,
+      );
     }
   }
 }

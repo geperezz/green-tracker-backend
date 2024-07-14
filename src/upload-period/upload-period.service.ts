@@ -75,8 +75,10 @@ export class UploadPeriodService {
   ): Promise<UploadPeriodDto> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const createdUploadPeriod =
-          await this.uploadPeriodRepository.create(creationData, transaction);
+        const createdUploadPeriod = await this.uploadPeriodRepository.create(
+          creationData,
+          transaction,
+        );
         return createdUploadPeriod;
       },
     );
@@ -84,36 +86,41 @@ export class UploadPeriodService {
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async sendReminders() {
-    const today = new Date().setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
     try {
       const uploadPeriod = await this.uploadPeriodRepository.findAll();
       if (!uploadPeriod) return;
 
-      if (today != new Date(uploadPeriod.startTimestamp).setHours(0, 0, 0, 0))
-        return;
+      const startTimestamp = new Date(uploadPeriod.startTimestamp);
+      startTimestamp.setUTCHours(0, 0, 0, 0);
 
+      if (+today !== +startTimestamp) return;
+      
       const units = await this.unitsService.findPage({ itemsPerPage: 1000 });
-      if (!units) return;
+      if (!units.items.length) return;
 
-      units.items.forEach(async (unit) => {
-        await this.mailerService.sendMail({
-          to: unit.email,
-          subject: `Inicio de periodo - GreenTracker`,
-          template: './startReminder',
-          context: {
-            unit: unit.name,
-            startTimestamp:
-              uploadPeriod.startTimestamp.toLocaleDateString('es-ES'),
-            endTimestamp: uploadPeriod.endTimestamp.toLocaleDateString('es-ES'),
+      const unitsEmails: string[] = units.items.map((unit) => unit.email);
+      if (!unitsEmails.length) return;
+
+      await this.mailerService.sendMail({
+        to: unitsEmails,
+        subject: `Inicio de periodo - GreenTracker`,
+        template: './startReminder',
+        context: {
+          unit: 'Unidad',
+          startTimestamp:
+            uploadPeriod.startTimestamp.toLocaleDateString('es-ES'),
+          endTimestamp: uploadPeriod.endTimestamp.toLocaleDateString('es-ES'),
+        },
+        attachments: [
+          {
+            filename: 'logo.png',
+            path: 'src/templates/assets/logo.png',
+            cid: 'logo',
           },
-          attachments: [
-            {
-              filename: 'logo.png',
-              path: 'src/templates/assets/logo.png',
-              cid: 'logo',
-            },
-          ],
-        });
+        ],
       });
     } catch (error) {
       throw new Error(
