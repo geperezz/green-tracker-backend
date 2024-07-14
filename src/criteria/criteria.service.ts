@@ -10,6 +10,7 @@ const {
   AlignmentType,
   ExternalHyperlink,
   ImageRun,
+  Tab,
 } = docx;
 import { readFileSync } from 'fs';
 
@@ -28,12 +29,12 @@ import { UnitsService } from 'src/units/units.service';
 import { EvidenceService } from 'src/evidence/evidence.service';
 import { ActivityUniqueTraitDto } from 'src/evidence/dtos/activity-unique-trait.dto';
 import { CriteriaRepository } from './criteria.repository';
-import { margin, paragraphStyles } from 'src/templates/report/report-styles';
+import { defaultStyles, margin } from 'src/templates/report/report-styles';
 import { header } from 'src/templates/report/header';
 import { imageResize } from 'src/templates/report/image-resize';
 import { IndicatorsRepository } from 'src/indicators/indicators.repository';
 import { IndicatorUniqueTrait } from 'src/indicators/schemas/indicator-unique-trait.schema';
-import { universityInfo } from 'src/templates/report/universityInfo';
+import { templateFields } from 'src/templates/report/template-fields';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
@@ -171,6 +172,7 @@ export class CriteriaService {
     const indicator = await this.indicatorsRepository.findOne(
       IndicatorUniqueTrait.parse({ index: criterion.indicatorIndex }),
     );
+    if (!indicator) return null;
 
     const url = process.env.URL_BACKEND;
 
@@ -199,7 +201,7 @@ export class CriteriaService {
             unitId: unit.id,
           }),
         );
-        //if unit has no activities, dont show in report
+        //if unit has no activities, dont show it in report
         if (!activities.length) paragraphArray.pop();
         for (const activity of activities) {
           paragraphArray.push(
@@ -211,8 +213,8 @@ export class CriteriaService {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: '\tResumen: ',
                   bold: true,
+                  children: [new Tab(), 'Resumen: '],
                 }),
                 new TextRun({
                   text: activity.summary,
@@ -221,9 +223,13 @@ export class CriteriaService {
             }),
             new Paragraph({ text: '' }),
             new Paragraph({
-              text: `\tEvidencias:`,
               heading: HeadingLevel.HEADING_4,
               alignment: AlignmentType.LEFT,
+              children: [
+                new TextRun({
+                  children: [new Tab(), 'Evidencias: '],
+                }),
+              ],
             }),
           );
           const evidences = await this.evidenceService.findAll(
@@ -234,7 +240,11 @@ export class CriteriaService {
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: '\t\tNo hay evidencias para esta actividad.',
+                    children: [
+                      new Tab(),
+                      new Tab(),
+                      'No hay evidencias para esta actividad.',
+                    ],
                   }),
                 ],
               }),
@@ -245,8 +255,8 @@ export class CriteriaService {
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: '\t\tTipo de evidencia: ',
                     bold: true,
+                    children: [new Tab(), new Tab(), 'Tipo de evidencia: '],
                   }),
                   new TextRun({
                     text: dictionary[evidence.type],
@@ -256,8 +266,8 @@ export class CriteriaService {
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: '\t\tDescripción: ',
                     bold: true,
+                    children: [new Tab(), new Tab(), 'Descripción: '],
                   }),
                   new TextRun({
                     text: evidence.description,
@@ -275,8 +285,8 @@ export class CriteriaService {
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: '\t\tEnlace: ',
                     bold: true,
+                    children: [new Tab(), new Tab(), 'Enlace: '],
                   }),
                   new ExternalHyperlink({
                     children: [
@@ -298,8 +308,12 @@ export class CriteriaService {
                   new Paragraph({
                     children: [
                       new TextRun({
-                        text: '\t\tEnlace relacionado: ',
                         bold: true,
+                        children: [
+                          new Tab(),
+                          new Tab(),
+                          'Enlace relacionado: ',
+                        ],
                       }),
                       new ExternalHyperlink({
                         children: [
@@ -353,9 +367,7 @@ export class CriteriaService {
     };
 
     const doc = new Document({
-      styles: {
-        paragraphStyles: paragraphStyles,
-      },
+      styles: defaultStyles,
       sections: [
         {
           properties: {
@@ -369,22 +381,12 @@ export class CriteriaService {
             }),
           },
           children: [
-            ...universityInfo,
+            // GreenMetric template info
+            ...templateFields(indicator, criterion),
+
+            // generated report
             new Paragraph({
-              text: `[${uniqueTrait.indicatorIndex}] ${indicator?.englishName}`,
-              heading: HeadingLevel.HEADING_2,
-              alignment: AlignmentType.LEFT,
-            }),
-            new Paragraph({
-              text: ``,
-            }),
-            new Paragraph({
-              text: `[${uniqueTrait.indicatorIndex}.${uniqueTrait.subindex}] ${criterion.englishName}`,
-              heading: HeadingLevel.HEADING_2,
-              alignment: AlignmentType.LEFT,
-            }),
-            new Paragraph({
-              text: `Reporte`,
+              text: `Reporte GreenTracker`,
               heading: HeadingLevel.HEADING_1,
               alignment: AlignmentType.CENTER,
             }),

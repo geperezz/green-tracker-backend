@@ -1,18 +1,14 @@
 const docx = require('docx');
 const {
   Paragraph,
-  AlignmentType,
   ImageRun,
   HorizontalPositionRelativeFrom,
-  HorizontalPositionAlign,
   VerticalPositionRelativeFrom,
-  Tab,
 } = docx;
 import { readFileSync } from 'fs';
 
 export const header = [
   new Paragraph({
-    alignment: AlignmentType.BOTH,
     children: [
       new ImageRun({
         data: readFileSync('src/templates/report/assets/ucabLogo.png'),
@@ -22,19 +18,19 @@ export const header = [
         },
       }),
       new ImageRun({
-        data: readFileSync('src/templates/report/assets/greenmetricLogo.png'),
+        data: readFileSync('src/templates/report/assets/greenMetricLogo.png'),
         transformation: {
           width: 115,
-          height: 99,
+          height: 85,
         },
         floating: {
           horizontalPosition: {
             relative: HorizontalPositionRelativeFrom.COLUMN,
-            align: HorizontalPositionAlign.RIGHT,
+            offset: 5093208,
           },
           verticalPosition: {
-            relative: VerticalPositionRelativeFrom.PAGE,
-            offset: 10,
+            relative: VerticalPositionRelativeFrom.PARAGRAPH,
+            offset: -320040,
           },
         },
       }),
