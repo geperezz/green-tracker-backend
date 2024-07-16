@@ -202,7 +202,10 @@ export class CriteriaService {
           }),
         );
         //if unit has no activities, dont show it in report
-        if (!activities.length) paragraphArray.pop();
+        if (!activities.length) {
+          paragraphArray.pop();
+          paragraphArray.pop();
+        }
         for (const activity of activities) {
           paragraphArray.push(
             new Paragraph({
