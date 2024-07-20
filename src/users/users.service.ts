@@ -12,6 +12,7 @@ import { UserDto } from './dtos/user.dto';
 import {
   UsersRepository,
   UserNotFoundError as UserNotFoundRepositoryError,
+  UserAlreadyExistsError as UserAlreadyExistsRepositoryError,
 } from './users.repository';
 import { UsersPageDto } from './dtos/users-page.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
@@ -21,6 +22,7 @@ import { UserFilters } from './schemas/user-filters.schema';
 
 export abstract class UsersServiceError extends Error {}
 export class UserNotFoundError extends UsersServiceError {}
+export class UserAlreadyExistsError extends UsersServiceError {}
 
 @Injectable()
 export class UsersService {
@@ -36,17 +38,24 @@ export class UsersService {
   ): Promise<UserDto> {
     return await (transaction ?? this.drizzleClient).transaction(
       async (transaction) => {
-        const user = await this.usersRepository.create(
-          UserCreation.parse({
-            ...userCreationDto,
-            password: await bcrypt.hash(
-              userCreationDto.password,
-              await bcrypt.genSalt(10),
-            ),
-          }),
-          transaction,
-        );
-        return UserDto.create(user);
+        try {
+          const user = await this.usersRepository.create(
+            UserCreation.parse({
+              ...userCreationDto,
+              password: await bcrypt.hash(
+                userCreationDto.password,
+                await bcrypt.genSalt(10),
+              ),
+            }),
+            transaction,
+          );
+          return UserDto.create(user);
+        } catch (error) {
+          if (error instanceof UserAlreadyExistsRepositoryError) {
+            throw new UserAlreadyExistsError(error.message, { cause: error });
+          }
+          throw error;
+        }
       },
     );
   }

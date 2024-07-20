@@ -7,7 +7,7 @@ import { UnitDto } from './dtos/unit.dto';
 import { UnitsPageDto } from './dtos/units-page.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
 import { UnitReplacementDto } from './dtos/unit-replacement.dto';
-import { UsersService } from 'src/users/users.service';
+import { UserAlreadyExistsError, UsersService } from 'src/users/users.service';
 import { UserCreationDto } from 'src/users/dtos/user-creation.dto';
 import { UserUniqueTraitDto } from 'src/users/dtos/user-unique-trait.dto';
 import { UserFiltersDto } from 'src/users/dtos/user-filters.dto';
@@ -20,6 +20,7 @@ import { ActivityFilters } from 'src/activities/schemas/activity-filters.schema'
 
 export abstract class UnitsServiceError extends Error {}
 export class UnitNotFoundError extends UnitsServiceError {}
+export class UnitAlreadyExistsError extends UnitsServiceError {}
 
 @Injectable()
 export class UnitsService {
@@ -35,35 +36,45 @@ export class UnitsService {
     unitCreationDto: UnitCreationDto,
     transaction?: DrizzleTransaction,
   ): Promise<UnitDto> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const unitAsUser = await this.usersService.create(
-          UserCreationDto.create({ ...unitCreationDto, role: 'unit' }),
-          transaction,
+    try {
+      return await (transaction ?? this.drizzleClient).transaction(
+        async (transaction) => {
+          const unitAsUser = await this.usersService.create(
+            UserCreationDto.create({ ...unitCreationDto, role: 'unit' }),
+            transaction,
+          );
+
+          const recommendedCategories =
+            unitCreationDto.recommendedCategories.length > 0
+              ? await this.recommendedCategoriesRepository.createMany(
+                  unitCreationDto.recommendedCategories.map(
+                    (recommendedCategory) => {
+                      return RecommendedCategoryCreation.parse({
+                        ...recommendedCategory,
+                        unitId: unitAsUser.id,
+                      });
+                    },
+                  ),
+                  transaction,
+                )
+              : [];
+
+          return UnitDto.create({
+            ...unitAsUser,
+            recommendedCategories,
+            contributedCategories: [],
+          });
+        },
+      );
+    } catch (error) {
+      if (error instanceof UserAlreadyExistsError) {
+        throw new UnitAlreadyExistsError(
+          error.message.replace('un usuario', 'una unidad'),
+          { cause: error },
         );
-
-        const recommendedCategories =
-          unitCreationDto.recommendedCategories.length > 0
-            ? await this.recommendedCategoriesRepository.createMany(
-                unitCreationDto.recommendedCategories.map(
-                  (recommendedCategory) => {
-                    return RecommendedCategoryCreation.parse({
-                      ...recommendedCategory,
-                      unitId: unitAsUser.id,
-                    });
-                  },
-                ),
-                transaction,
-              )
-            : [];
-
-        return UnitDto.create({
-          ...unitAsUser,
-          recommendedCategories,
-          contributedCategories: [],
-        });
-      },
-    );
+      }
+      throw error;
+    }
   }
 
   async findOne(

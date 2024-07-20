@@ -13,6 +13,7 @@ import { UserFilters } from './schemas/user-filters.schema';
 
 export abstract class UsersRepositoryError extends Error {}
 export class UserNotFoundError extends UsersRepositoryError {}
+export class UserAlreadyExistsError extends UsersRepositoryError {}
 
 @Injectable()
 export class UsersRepository {
@@ -25,16 +26,34 @@ export class UsersRepository {
     creationData: UserCreation,
     transaction?: DrizzleTransaction,
   ): Promise<User> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [createdUser] = await transaction
-          .insert(usersTable)
-          .values(creationData)
-          .returning();
+    try {
+      return await (transaction ?? this.drizzleClient).transaction(
+        async (transaction) => {
+          const [createdUser] = await transaction
+            .insert(usersTable)
+            .values(creationData)
+            .returning();
 
-        return User.parse(createdUser);
-      },
-    );
+          return User.parse(createdUser);
+        },
+      );
+    } catch (error) {
+      if (error.code == '23505') {
+        if (error.detail.includes('email')) {
+          throw new UserAlreadyExistsError(
+            `Ya existe un usuario con email '${creationData.email}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('id')) {
+          throw new UserAlreadyExistsError(
+            `Ya existe un usuario con id '${creationData.id}'`,
+            { cause: error },
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   async findOne(

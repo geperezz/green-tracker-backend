@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -13,7 +14,11 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
-import { UnitNotFoundError, UnitsService } from './units.service';
+import {
+  UnitAlreadyExistsError,
+  UnitNotFoundError,
+  UnitsService,
+} from './units.service';
 import { UnitCreationDto } from './dtos/unit-creation.dto';
 import { UnitDto } from './dtos/unit.dto';
 import { UnitUniqueTraitDto } from './dtos/unit-unique-trait.dto';
@@ -30,7 +35,7 @@ import { UserUniqueTrait } from 'src/users/schemas/user-unique-trait.schema';
 export class UnitsController {
   constructor(
     private readonly unitsService: UnitsService,
-    private readonly activitiesService: ActivitiesService
+    private readonly activitiesService: ActivitiesService,
   ) {}
 
   @Post()
@@ -39,7 +44,14 @@ export class UnitsController {
     @Body()
     creationDataDto: UnitCreationDto,
   ): Promise<UnitDto> {
-    return await this.unitsService.create(creationDataDto);
+    try {
+      return await this.unitsService.create(creationDataDto);
+    } catch (error) {
+      if (error instanceof UnitAlreadyExistsError) {
+        throw new BadRequestException(error.message, { cause: error.cause });
+      }
+      throw error;
+    }
   }
 
   @Get('/me/')
@@ -69,7 +81,7 @@ export class UnitsController {
     me: UserDto,
   ): Promise<ActivityWithEvidencesAndFeedbacksDto[] | null> {
     return await this.activitiesService.findAllWithFeedbacks(
-      UserUniqueTrait.parse({id: me.id}),
+      UserUniqueTrait.parse({ id: me.id }),
     );
   }
 
