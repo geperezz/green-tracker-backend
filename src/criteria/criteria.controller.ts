@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -14,9 +15,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import {
-  CriterionNotFoundError,
-} from './criteria.repository';
+import { CriterionNotFoundError } from './criteria.repository';
 import { CriterionDto } from './dtos/criterion.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
 import { CriteriaPageDto } from './dtos/criteria-page.dto';
@@ -30,7 +29,10 @@ import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 import { CriterionIndicatorIndexDto } from './dtos/criterion-indicator-index.dto';
 import { CriterionCreationDto } from './dtos/criterion-creation.dto';
 import { CriterionFilters } from './schemas/criterion-filters.schema';
-import { CriteriaService } from './criteria.service';
+import {
+  CriteriaService,
+  CriterionAlreadyExistsError,
+} from './criteria.service';
 import { Response } from 'express';
 
 @Controller('/indicators/:indicatorIndex/criteria/')
@@ -46,13 +48,20 @@ export class CriteriaController {
     @Body()
     creationDataDto: CriterionCreationDto,
   ): Promise<CriterionDto> {
-    const createdCriterionSchema = await this.criteriaService.createCriterion(
-      CriterionCreation.parse({
-        ...indicatorIndexDto,
-        ...creationDataDto,
-      }),
-    );
-    return CriterionDto.create(createdCriterionSchema);
+    try {
+      const createdCriterionSchema = await this.criteriaService.createCriterion(
+        CriterionCreation.parse({
+          ...indicatorIndexDto,
+          ...creationDataDto,
+        }),
+      );
+      return CriterionDto.create(createdCriterionSchema);
+    } catch (error) {
+      if (error instanceof CriterionAlreadyExistsError) {
+        throw new BadRequestException(error.message, { cause: error.cause });
+      }
+      throw error;
+    }
   }
 
   @Get('/:subindex/')

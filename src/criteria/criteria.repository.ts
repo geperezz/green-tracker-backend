@@ -14,6 +14,7 @@ import { CriterionUpdate } from './schemas/criterion-update.schema';
 
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
+export class CriterionAlreadyExistsError extends CriteriaRepositoryError {}
 
 @Injectable()
 export class CriteriaRepository {
@@ -26,18 +27,42 @@ export class CriteriaRepository {
     creationData: CriterionCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
-    if (transaction === undefined) {
-      return await this.drizzleClient.transaction(async (transaction) => {
-        return await this.createCriterion(creationData, transaction);
-      });
+    try {
+      if (transaction === undefined) {
+        return await this.drizzleClient.transaction(async (transaction) => {
+          return await this.createCriterion(creationData, transaction);
+        });
+      }
+
+      const [createdCriterion] = await transaction
+        .insert(criteriaTable)
+        .values(creationData)
+        .returning();
+
+      return Criterion.parse(createdCriterion);
+    } catch (error) {
+      if (error.code == '23505') {
+        if (error.detail.includes('index, subindex')) {
+          throw new CriterionAlreadyExistsError(
+            `Ya existe un criterio con subíndice '${creationData.subindex}' para el indicador '${creationData.indicatorIndex}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('spanish_alias')) {
+          throw new CriterionAlreadyExistsError(
+            `Ya existe un criterio con alias en español '${creationData.spanishAlias}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('english_name')) {
+          throw new CriterionAlreadyExistsError(
+            `Ya existe un criterio con nombre en inglés '${creationData.englishName}'`,
+            { cause: error },
+          );
+        }
+      }
+      throw error;
     }
-
-    const [createdCriterion] = await transaction
-      .insert(criteriaTable)
-      .values(creationData)
-      .returning();
-
-    return Criterion.parse(createdCriterion);
   }
 
   async findCriterion(

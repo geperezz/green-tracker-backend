@@ -39,8 +39,6 @@ export class IndicatorsRepository {
 
       return Indicator.parse(createdIndicator);
     } catch (error) {
-      console.log(error);
-      console.log(error.detail);
       if (error.code == '23505') {
         if (error.detail.includes('index')) {
           throw new IndicatorAlreadyExistsError(

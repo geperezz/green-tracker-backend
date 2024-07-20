@@ -35,9 +35,10 @@ import { imageResize } from 'src/templates/report/image-resize';
 import { IndicatorsRepository } from 'src/indicators/indicators.repository';
 import { IndicatorUniqueTrait } from 'src/indicators/schemas/indicator-unique-trait.schema';
 import { templateFields } from 'src/templates/report/template-fields';
-
+import { CriterionAlreadyExistsError as CriterionAlreadyExistsRepositoryError } from './criteria.repository';
 export abstract class CriteriaRepositoryError extends Error {}
 export class CriterionNotFoundError extends CriteriaRepositoryError {}
+export class CriterionAlreadyExistsError extends CriteriaRepositoryError {}
 
 @Injectable()
 export class CriteriaService {
@@ -55,16 +56,22 @@ export class CriteriaService {
     creationData: CriterionCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
-    if (transaction === undefined) {
-      return await this.drizzleClient.transaction(async (transaction) => {
-        return await this.createCriterion(creationData, transaction);
-      });
+    try {
+      if (transaction === undefined) {
+        return await this.drizzleClient.transaction(async (transaction) => {
+          return await this.createCriterion(creationData, transaction);
+        });
+      }
+      return await this.criteriaRepository.createCriterion(
+        creationData,
+        transaction,
+      );
+    } catch (error) {
+      if (error instanceof CriterionAlreadyExistsRepositoryError) {
+        throw new CriterionAlreadyExistsError(error.message, { cause: error });
+      }
+      throw error;
     }
-
-    return await this.criteriaRepository.createCriterion(
-      creationData,
-      transaction,
-    );
   }
 
   async findCriterion(
