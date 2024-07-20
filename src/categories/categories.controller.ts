@@ -23,6 +23,7 @@ import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 import { CategoryIndicatorIndexDto } from './dtos/category-indicator-index.dto';
 import {
   CategoriesService,
+  CategoryAlreadyExistsError,
   CriterionNotFoundError,
 } from './categories.service';
 
@@ -50,6 +51,9 @@ export class CategoriesController {
           description: `Trying to put into the category a criterion that does not exist. There is no criterion no. ${error.criterionSubindex} for the indicator no. ${indicatorIndexDto.indicatorIndex}`,
           cause: error,
         });
+      }
+      if (error instanceof CategoryAlreadyExistsError) {
+        throw new BadRequestException(error.message, { cause: error.cause });
       }
       throw error;
     }

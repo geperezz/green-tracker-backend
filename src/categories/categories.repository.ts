@@ -13,6 +13,7 @@ import { CategoryFilters } from './schemas/category-filters.schema';
 
 export abstract class CategoriesRepositoryError extends Error {}
 export class CategoryNotFoundError extends CategoriesRepositoryError {}
+export class CategoryAlreadyExistsError extends CategoriesRepositoryError {}
 
 @Injectable()
 export class CategoriesRepository {
@@ -25,18 +26,31 @@ export class CategoriesRepository {
     creationData: CategoryCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Category> {
-    if (transaction === undefined) {
-      return await this.drizzleClient.transaction(async (transaction) => {
-        return await this.createCategory(creationData, transaction);
-      });
+    try {
+      if (transaction === undefined) {
+        return await this.drizzleClient.transaction(async (transaction) => {
+          return await this.createCategory(creationData, transaction);
+        });
+      }
+
+      const [createdCategory] = await transaction
+        .insert(categoriesTable)
+        .values(creationData)
+        .returning();
+
+      return Category.parse(createdCategory);
+    } catch (error) {
+      console.log(error);
+      if (error.code == '23505') {
+        if (error.detail.includes('name')) {
+          throw new CategoryAlreadyExistsError(
+            `Ya existe una categoría con nombre '${creationData.name}' para el indicador '${creationData.indicatorIndex}'`,
+            { cause: error },
+          );
+        }
+      }
+      throw error;
     }
-
-    const [createdCategory] = await transaction
-      .insert(categoriesTable)
-      .values(creationData)
-      .returning();
-
-    return Category.parse(createdCategory);
   }
 
   async findCategory(

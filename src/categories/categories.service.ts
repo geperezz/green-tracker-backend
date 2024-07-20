@@ -5,7 +5,10 @@ import { PaginationOptions } from 'src/pagination/schemas/pagination-options.sch
 import { CategoryUniqueTrait } from './schemas/category-unique-trait.schema';
 import { CategoryUniqueTraitDto } from './dtos/category-unique-trait.dto';
 import { CategoryDto } from './dtos/category.dto';
-import { CategoriesRepository } from './categories.repository';
+import {
+  CategoriesRepository,
+  CategoryAlreadyExistsError as CategoryAlreadyExistsRepositoryError,
+} from './categories.repository';
 import { CriterionNotFoundError as CriterionNotFoundRepositoryError } from 'src/criteria/criteria.repository';
 import { CategoriesPageDto } from './dtos/categories-page.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
@@ -24,6 +27,7 @@ import { Criterion } from 'src/criteria/schemas/criterion.schema';
 
 export abstract class CategoriesServiceError extends Error {}
 export class CategoryNotFoundError extends CategoriesServiceError {}
+export class CategoryAlreadyExistsError extends CategoriesServiceError {}
 export class CriterionNotFoundError extends CategoriesServiceError {
   constructor(public criterionSubindex: Criterion['subindex']) {
     super();
@@ -44,51 +48,58 @@ export class CategoriesService {
     creationDataDto: CategoryCreationDto,
     transaction?: DrizzleTransaction,
   ): Promise<CategoryDto> {
-    if (transaction === undefined) {
-      return await this.drizzleClient.transaction(async (transaction) => {
-        return await this.createCategory(
-          indicatorIndexDto,
-          creationDataDto,
-          transaction,
-        );
-      });
-    }
-
-    const createdCategorySchema =
-      await this.categoriesRepository.createCategory(
-        CategoryCreation.parse({
-          ...indicatorIndexDto,
-          ...creationDataDto,
-        }),
-        transaction,
-      );
-
-    const updatedCriteriaSchema = await Promise.all(
-      creationDataDto.criteria.map(async ({ subindex }) => {
-        try {
-          return await this.criteriaRepository.updateCriterion(
-            CriterionUniqueTrait.parse({
-              indicatorIndex: createdCategorySchema.indicatorIndex,
-              subindex,
-            }),
-            CriterionUpdate.parse({
-              categoryName: createdCategorySchema.name,
-            }),
+    try {
+      if (transaction === undefined) {
+        return await this.drizzleClient.transaction(async (transaction) => {
+          return await this.createCategory(
+            indicatorIndexDto,
+            creationDataDto,
             transaction,
           );
-        } catch (error) {
-          if (error instanceof CriterionNotFoundRepositoryError) {
-            throw new CriterionNotFoundError(subindex);
-          }
-          throw error;
-        }
-      }),
-    );
+        });
+      }
 
-    return CategoryDto.create({
-      ...createdCategorySchema,
-      criteria: updatedCriteriaSchema,
-    });
+      const createdCategorySchema =
+        await this.categoriesRepository.createCategory(
+          CategoryCreation.parse({
+            ...indicatorIndexDto,
+            ...creationDataDto,
+          }),
+          transaction,
+        );
+
+      const updatedCriteriaSchema = await Promise.all(
+        creationDataDto.criteria.map(async ({ subindex }) => {
+          try {
+            return await this.criteriaRepository.updateCriterion(
+              CriterionUniqueTrait.parse({
+                indicatorIndex: createdCategorySchema.indicatorIndex,
+                subindex,
+              }),
+              CriterionUpdate.parse({
+                categoryName: createdCategorySchema.name,
+              }),
+              transaction,
+            );
+          } catch (error) {
+            if (error instanceof CriterionNotFoundRepositoryError) {
+              throw new CriterionNotFoundError(subindex);
+            }
+            throw error;
+          }
+        }),
+      );
+
+      return CategoryDto.create({
+        ...createdCategorySchema,
+        criteria: updatedCriteriaSchema,
+      });
+    } catch (error) {
+      if (error instanceof CategoryAlreadyExistsRepositoryError) {
+        throw new CategoryAlreadyExistsError(error.message, { cause: error });
+      }
+      throw error;
+    }
   }
 
   async findCategory(
