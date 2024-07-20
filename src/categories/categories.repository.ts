@@ -40,7 +40,6 @@ export class CategoriesRepository {
 
       return Category.parse(createdCategory);
     } catch (error) {
-      console.log(error);
       if (error.code == '23505') {
         if (error.detail.includes('name')) {
           throw new CategoryAlreadyExistsError(
