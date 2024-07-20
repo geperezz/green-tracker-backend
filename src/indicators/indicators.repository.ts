@@ -12,6 +12,7 @@ import { IndicatorUniqueTrait } from './schemas/indicator-unique-trait.schema';
 
 export abstract class IndicatorsRepositoryError extends Error {}
 export class IndicatorNotFoundError extends IndicatorsRepositoryError {}
+export class IndicatorAlreadyExistsError extends IndicatorsRepositoryError {}
 
 @Injectable()
 export class IndicatorsRepository {
@@ -24,18 +25,44 @@ export class IndicatorsRepository {
     creationData: IndicatorCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Indicator> {
-    if (transaction === undefined) {
-      return await this.drizzleClient.transaction(async (transaction) => {
-        return await this.create(creationData, transaction);
-      });
+    try {
+      if (transaction === undefined) {
+        return await this.drizzleClient.transaction(async (transaction) => {
+          return await this.create(creationData, transaction);
+        });
+      }
+
+      const [createdIndicator] = await transaction
+        .insert(indicatorsTable)
+        .values(creationData)
+        .returning();
+
+      return Indicator.parse(createdIndicator);
+    } catch (error) {
+      console.log(error);
+      console.log(error.detail);
+      if (error.code == '23505') {
+        if (error.detail.includes('index')) {
+          throw new IndicatorAlreadyExistsError(
+            `Ya existe un indicador con índice '${creationData.index}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('spanish_alias')) {
+          throw new IndicatorAlreadyExistsError(
+            `Ya existe un indicador con alias en español '${creationData.spanishAlias}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('english_name')) {
+          throw new IndicatorAlreadyExistsError(
+            `Ya existe un indicador con nombre en inglés '${creationData.englishName}'`,
+            { cause: error },
+          );
+        }
+      }
+      throw error;
     }
-
-    const [createdIndicator] = await transaction
-      .insert(indicatorsTable)
-      .values(creationData)
-      .returning();
-
-    return Indicator.parse(createdIndicator);
   }
 
   async findOne(

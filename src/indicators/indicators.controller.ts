@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   NotFoundException,
+  BadRequestException,
   Param,
   Post,
   Put,
@@ -20,6 +21,7 @@ import { IndicatorUniqueTraitDto } from './dtos/indicator-unique-trait.dto';
 import { LoggedInAs } from 'src/auth/logged-in-as.decorator';
 import {
   IndicatorNotFoundError,
+  IndicatorAlreadyExistsError,
   IndicatorsService,
 } from './indicators.service';
 
@@ -34,7 +36,14 @@ export class IndicatorsController {
     @Body()
     creationDataDto: IndicatorCreationDto,
   ): Promise<IndicatorDto> {
-    return await this.indicatorsService.create(creationDataDto);
+    try {
+      return await this.indicatorsService.create(creationDataDto);
+    } catch (error) {
+      if (error instanceof IndicatorAlreadyExistsError) {
+        throw new BadRequestException(error.message, { cause: error.cause });
+      }
+      throw error;
+    }
   }
 
   @Get()

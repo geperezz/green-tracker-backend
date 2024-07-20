@@ -8,6 +8,7 @@ import { IndicatorDto } from './dtos/indicator.dto';
 import {
   IndicatorsRepository,
   IndicatorNotFoundError as IndicatorNotFoundRepositoryError,
+  IndicatorAlreadyExistsError as IndicatorAlreadyExistsRepositoryError,
 } from './indicators.repository';
 import { IndicatorsPageDto } from './dtos/indicators-page.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
@@ -18,9 +19,11 @@ import { IndicatorCreation } from './schemas/indicator-creation.schema';
 import { IndicatorReplacementDto } from './dtos/indicator-replacement.dto';
 import { IndicatorReplacement } from './schemas/indicator-replacement.schema';
 import { CategoryIndicatorIndexDto } from 'src/categories/dtos/category-indicator-index.dto';
+import { DrizzleError } from 'drizzle-orm';
 
 export abstract class IndicatorsServiceError extends Error {}
 export class IndicatorNotFoundError extends IndicatorsServiceError {}
+export class IndicatorAlreadyExistsError extends IndicatorsServiceError {}
 
 @Injectable()
 export class IndicatorsService {
@@ -35,18 +38,25 @@ export class IndicatorsService {
     creationDataDto: IndicatorCreationDto,
     transaction?: DrizzleTransaction,
   ): Promise<IndicatorDto> {
-    if (transaction === undefined) {
-      return await this.drizzleClient.transaction(async (transaction) => {
-        return await this.create(creationDataDto, transaction);
-      });
+    try {
+      if (transaction === undefined) {
+        return await this.drizzleClient.transaction(async (transaction) => {
+          return await this.create(creationDataDto, transaction);
+        });
+      }
+
+      const indicator = await this.indicatorsRepository.create(
+        IndicatorCreation.parse(creationDataDto),
+        transaction,
+      );
+
+      return IndicatorDto.create({ ...indicator, categories: [] });
+    } catch (error) {
+      if (error instanceof IndicatorAlreadyExistsRepositoryError) {
+        throw new IndicatorAlreadyExistsError(error.message, { cause: error });
+      }
+      throw error;
     }
-
-    const indicator = await this.indicatorsRepository.create(
-      IndicatorCreation.parse(creationDataDto),
-      transaction,
-    );
-
-    return IndicatorDto.create({ ...indicator, categories: [] });
   }
 
   async findOne(
