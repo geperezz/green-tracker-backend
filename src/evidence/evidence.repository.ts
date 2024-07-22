@@ -124,20 +124,24 @@ export class EvidenceRepository {
 
   private transformFiltersToWhereConditions(filters?: EvidenceFilters) {
     return and(
-      filters?.activityId
+      filters?.activityId !== undefined
         ? eq(evidenceTable.activityId, filters.activityId)
         : undefined,
-      filters?.evidenceNumber
+      filters?.evidenceNumber !== undefined
         ? eq(evidenceTable.evidenceNumber, filters.evidenceNumber)
         : undefined,
-      filters?.description
+      filters?.description !== undefined
         ? eq(evidenceTable.description, filters.description)
         : undefined,
-      filters?.link ? eq(evidenceTable.link, filters.link) : undefined,
-      filters?.uploadTimestamp
+      filters?.link !== undefined
+        ? eq(evidenceTable.link, filters.link)
+        : undefined,
+      filters?.uploadTimestamp !== undefined
         ? eq(evidenceTable.uploadTimestamp, filters.uploadTimestamp)
         : undefined,
-      filters?.type ? eq(evidenceTable.type, filters.type) : undefined,
+      filters?.type !== undefined
+        ? eq(evidenceTable.type, filters.type)
+        : undefined,
     );
   }
 

@@ -25,13 +25,13 @@ export class IndicatorsRepository {
     creationData: IndicatorCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Indicator> {
-    try {
-      if (transaction === undefined) {
-        return await this.drizzleClient.transaction(async (transaction) => {
-          return await this.create(creationData, transaction);
-        });
-      }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.create(creationData, transaction);
+      });
+    }
 
+    try {
       const [createdIndicator] = await transaction
         .insert(indicatorsTable)
         .values(creationData)
@@ -155,16 +155,40 @@ export class IndicatorsRepository {
       });
     }
 
-    const [replacedIndicator = null] = await transaction
-      .update(indicatorsTable)
-      .set(replacementData)
-      .where(eq(indicatorsTable.index, indicatorUniqueTrait.index))
-      .returning();
-    if (!replacedIndicator) {
-      throw new IndicatorNotFoundError();
-    }
+    try {
+      const [replacedIndicator = null] = await transaction
+        .update(indicatorsTable)
+        .set(replacementData)
+        .where(eq(indicatorsTable.index, indicatorUniqueTrait.index))
+        .returning();
+      if (!replacedIndicator) {
+        throw new IndicatorNotFoundError();
+      }
 
-    return Indicator.parse(replacedIndicator);
+      return Indicator.parse(replacedIndicator);
+    } catch (error) {
+      if (error.code == '23505') {
+        if (error.detail.includes('index')) {
+          throw new IndicatorAlreadyExistsError(
+            `Ya existe un indicador con índice '${replacementData.index}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('spanish_alias')) {
+          throw new IndicatorAlreadyExistsError(
+            `Ya existe un indicador con alias en español '${replacementData.spanishAlias}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('english_name')) {
+          throw new IndicatorAlreadyExistsError(
+            `Ya existe un indicador con nombre en inglés '${replacementData.englishName}'`,
+            { cause: error },
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   async delete(

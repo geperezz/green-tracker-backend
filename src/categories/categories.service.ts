@@ -24,6 +24,7 @@ import { CriterionUpdate } from 'src/criteria/schemas/criterion-update.schema';
 import { CriterionUniqueTrait } from 'src/criteria/schemas/criterion-unique-trait.schema';
 import { CategoryReplacement } from './schemas/category-replacement.schema';
 import { Criterion } from 'src/criteria/schemas/criterion.schema';
+import { Category } from './schemas/category.schema';
 
 export abstract class CategoriesServiceError extends Error {}
 export class CategoryNotFoundError extends CategoriesServiceError {}
@@ -48,58 +49,58 @@ export class CategoriesService {
     creationDataDto: CategoryCreationDto,
     transaction?: DrizzleTransaction,
   ): Promise<CategoryDto> {
-    try {
-      if (transaction === undefined) {
-        return await this.drizzleClient.transaction(async (transaction) => {
-          return await this.createCategory(
-            indicatorIndexDto,
-            creationDataDto,
-            transaction,
-          );
-        });
-      }
-
-      const createdCategorySchema =
-        await this.categoriesRepository.createCategory(
-          CategoryCreation.parse({
-            ...indicatorIndexDto,
-            ...creationDataDto,
-          }),
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.createCategory(
+          indicatorIndexDto,
+          creationDataDto,
           transaction,
         );
-
-      const updatedCriteriaSchema = await Promise.all(
-        creationDataDto.criteria.map(async ({ subindex }) => {
-          try {
-            return await this.criteriaRepository.updateCriterion(
-              CriterionUniqueTrait.parse({
-                indicatorIndex: createdCategorySchema.indicatorIndex,
-                subindex,
-              }),
-              CriterionUpdate.parse({
-                categoryName: createdCategorySchema.name,
-              }),
-              transaction,
-            );
-          } catch (error) {
-            if (error instanceof CriterionNotFoundRepositoryError) {
-              throw new CriterionNotFoundError(subindex);
-            }
-            throw error;
-          }
-        }),
-      );
-
-      return CategoryDto.create({
-        ...createdCategorySchema,
-        criteria: updatedCriteriaSchema,
       });
+    }
+
+    let createdCategorySchema: Category;
+    try {
+      createdCategorySchema = await this.categoriesRepository.createCategory(
+        CategoryCreation.parse({
+          ...indicatorIndexDto,
+          ...creationDataDto,
+        }),
+        transaction,
+      );
     } catch (error) {
       if (error instanceof CategoryAlreadyExistsRepositoryError) {
         throw new CategoryAlreadyExistsError(error.message, { cause: error });
       }
       throw error;
     }
+
+    const updatedCriteriaSchema = await Promise.all(
+      creationDataDto.criteria.map(async ({ subindex }) => {
+        try {
+          return await this.criteriaRepository.updateCriterion(
+            CriterionUniqueTrait.parse({
+              indicatorIndex: createdCategorySchema.indicatorIndex,
+              subindex,
+            }),
+            CriterionUpdate.parse({
+              categoryName: createdCategorySchema.name,
+            }),
+            transaction,
+          );
+        } catch (error) {
+          if (error instanceof CriterionNotFoundRepositoryError) {
+            throw new CriterionNotFoundError(subindex);
+          }
+          throw error;
+        }
+      }),
+    );
+
+    return CategoryDto.create({
+      ...createdCategorySchema,
+      criteria: updatedCriteriaSchema,
+    });
   }
 
   async findCategory(
@@ -252,14 +253,22 @@ export class CategoriesService {
       }),
     );
 
-    const newCategorySchema = await this.categoriesRepository.replaceCategory(
-      CategoryUniqueTrait.parse(uniqueTraitDto),
-      CategoryReplacement.parse({
-        ...replacementDataDto,
-        indicatorIndex: uniqueTraitDto.indicatorIndex,
-      }),
-      transaction,
-    );
+    let newCategorySchema: Category;
+    try {
+      newCategorySchema = await this.categoriesRepository.replaceCategory(
+        CategoryUniqueTrait.parse(uniqueTraitDto),
+        CategoryReplacement.parse({
+          ...replacementDataDto,
+          indicatorIndex: uniqueTraitDto.indicatorIndex,
+        }),
+        transaction,
+      );
+    } catch (error) {
+      if (error instanceof CategoryAlreadyExistsRepositoryError) {
+        throw new CategoryAlreadyExistsError(error.message, { cause: error });
+      }
+      throw error;
+    }
 
     const newCriteriaSchemas = await Promise.all(
       replacementDataDto.criteria.map(async ({ subindex }) => {

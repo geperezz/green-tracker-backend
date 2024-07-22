@@ -131,11 +131,19 @@ export class UsersRepository {
 
   private transformFiltersToWhereConditions(filters?: UserFilters) {
     return and(
-      filters?.id ? eq(usersTable.id, filters.id) : undefined,
-      filters?.name ? eq(usersTable.name, filters.name) : undefined,
-      filters?.email ? eq(usersTable.email, filters.email) : undefined,
-      filters?.password ? eq(usersTable.password, filters.password) : undefined,
-      filters?.role ? eq(usersTable.role, filters.role) : undefined,
+      filters?.id !== undefined ? eq(usersTable.id, filters.id) : undefined,
+      filters?.name !== undefined
+        ? eq(usersTable.name, filters.name)
+        : undefined,
+      filters?.email !== undefined
+        ? eq(usersTable.email, filters.email)
+        : undefined,
+      filters?.password !== undefined
+        ? eq(usersTable.password, filters.password)
+        : undefined,
+      filters?.role !== undefined
+        ? eq(usersTable.role, filters.role)
+        : undefined,
     );
   }
 
@@ -144,20 +152,38 @@ export class UsersRepository {
     replacementData: UserReplacement,
     transaction?: DrizzleTransaction,
   ): Promise<User> {
-    return await (transaction ?? this.drizzleClient).transaction(
-      async (transaction) => {
-        const [replacedUser = null] = await transaction
-          .update(usersTable)
-          .set(replacementData)
-          .where(eq(usersTable.id, userUniqueTrait.id))
-          .returning();
-        if (!replacedUser) {
-          throw new UserNotFoundError();
-        }
+    try {
+      return await (transaction ?? this.drizzleClient).transaction(
+        async (transaction) => {
+          const [replacedUser = null] = await transaction
+            .update(usersTable)
+            .set(replacementData)
+            .where(eq(usersTable.id, userUniqueTrait.id))
+            .returning();
+          if (!replacedUser) {
+            throw new UserNotFoundError();
+          }
 
-        return User.parse(replacedUser);
-      },
-    );
+          return User.parse(replacedUser);
+        },
+      );
+    } catch (error) {
+      if (error.code == '23505') {
+        if (error.detail.includes('email')) {
+          throw new UserAlreadyExistsError(
+            `Ya existe un usuario con email '${replacementData.email}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('id')) {
+          throw new UserAlreadyExistsError(
+            `Ya existe un usuario con id '${replacementData.id}'`,
+            { cause: error },
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   async delete(

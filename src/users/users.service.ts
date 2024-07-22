@@ -145,6 +145,9 @@ export class UsersService {
           if (error instanceof UserNotFoundRepositoryError) {
             throw new UserNotFoundError();
           }
+          if (error instanceof UserAlreadyExistsRepositoryError) {
+            throw new UserAlreadyExistsError(error.message, { cause: error });
+          }
           throw error;
         }
       },

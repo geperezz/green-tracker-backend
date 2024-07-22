@@ -17,6 +17,7 @@ import { RecommendedCategoryCreation } from 'src/recommended-categories/schemas/
 import { RecommendedCategoryFilters } from 'src/recommended-categories/schemas/recommended-category-filters.schema';
 import { ActivitiesRepository } from 'src/activities/activities.repository';
 import { ActivityFilters } from 'src/activities/schemas/activity-filters.schema';
+import { UserDto } from 'src/users/dtos/user.dto';
 
 export abstract class UnitsServiceError extends Error {}
 export class UnitNotFoundError extends UnitsServiceError {}
@@ -218,14 +219,25 @@ export class UnitsService {
           throw new UnitNotFoundError();
         }
 
-        const newUnit = await this.usersService.replace(
-          UserUniqueTraitDto.create(unitUniqueTraitDto),
-          UserReplacementDto.create({
-            ...unitReplacementDto,
-            role: 'unit',
-          }),
-          transaction,
-        );
+        let newUnit: UserDto;
+        try {
+          newUnit = await this.usersService.replace(
+            UserUniqueTraitDto.create(unitUniqueTraitDto),
+            UserReplacementDto.create({
+              ...unitReplacementDto,
+              role: 'unit',
+            }),
+            transaction,
+          );
+        } catch (error) {
+          if (error instanceof UserAlreadyExistsError) {
+            throw new UnitAlreadyExistsError(
+              error.message.replace('un usuario', 'una unidad'),
+              { cause: error },
+            );
+          }
+          throw error;
+        }
 
         await this.recommendedCategoriesRepository.deleteMany(
           RecommendedCategoryFilters.parse({

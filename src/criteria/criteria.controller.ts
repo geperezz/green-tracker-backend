@@ -15,7 +15,6 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { CriterionNotFoundError } from './criteria.repository';
 import { CriterionDto } from './dtos/criterion.dto';
 import { PaginationOptionsDto } from 'src/pagination/dtos/pagination-options.dto';
 import { CriteriaPageDto } from './dtos/criteria-page.dto';
@@ -31,6 +30,7 @@ import { CriterionCreationDto } from './dtos/criterion-creation.dto';
 import { CriterionFilters } from './schemas/criterion-filters.schema';
 import {
   CriteriaService,
+  CriterionNotFoundError,
   CriterionAlreadyExistsError,
 } from './criteria.service';
 import { Response } from 'express';
@@ -156,6 +156,9 @@ export class CriteriaController {
           description: `There is no criterion with index ${uniqueTraitDto.indicatorIndex}.${uniqueTraitDto.subindex}`,
           cause: error,
         });
+      }
+      if (error instanceof CriterionAlreadyExistsError) {
+        throw new BadRequestException(error.message, { cause: error.cause });
       }
 
       throw error;

@@ -156,13 +156,13 @@ export class RecommendedCategoriesRepository {
     filters?: RecommendedCategoryFilters,
   ) {
     return and(
-      filters?.indicatorIndex
+      filters?.indicatorIndex !== undefined
         ? eq(recommendedCategoriesTable.indicatorIndex, filters.indicatorIndex)
         : undefined,
-      filters?.categoryName
+      filters?.categoryName !== undefined
         ? eq(recommendedCategoriesTable.categoryName, filters.categoryName)
         : undefined,
-      filters?.unitId
+      filters?.unitId !== undefined
         ? eq(recommendedCategoriesTable.unitId, filters.unitId)
         : undefined,
     );

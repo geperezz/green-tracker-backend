@@ -138,6 +138,9 @@ export class UnitsController {
           cause: error,
         });
       }
+      if (error instanceof UnitAlreadyExistsError) {
+        throw new BadRequestException(error.message, { cause: error.cause });
+      }
 
       throw error;
     }

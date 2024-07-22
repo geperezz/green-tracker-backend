@@ -26,13 +26,13 @@ export class CategoriesRepository {
     creationData: CategoryCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Category> {
-    try {
-      if (transaction === undefined) {
-        return await this.drizzleClient.transaction(async (transaction) => {
-          return await this.createCategory(creationData, transaction);
-        });
-      }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.createCategory(creationData, transaction);
+      });
+    }
 
+    try {
       const [createdCategory] = await transaction
         .insert(categoriesTable)
         .values(creationData)
@@ -141,10 +141,12 @@ export class CategoriesRepository {
     filters?: CategoryFilters,
   ): SQL | undefined {
     return and(
-      filters?.indicatorIndex
+      filters?.indicatorIndex !== undefined
         ? eq(categoriesTable.indicatorIndex, filters.indicatorIndex)
         : undefined,
-      filters?.name ? eq(categoriesTable.name, filters.name) : undefined,
+      filters?.name !== undefined
+        ? eq(categoriesTable.name, filters.name)
+        : undefined,
     );
   }
 
@@ -163,16 +165,28 @@ export class CategoriesRepository {
       });
     }
 
-    const [replacedCategory = null] = await transaction
-      .update(categoriesTable)
-      .set(replacementData)
-      .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
-      .returning();
-    if (!replacedCategory) {
-      throw new CategoryNotFoundError();
-    }
+    try {
+      const [replacedCategory = null] = await transaction
+        .update(categoriesTable)
+        .set(replacementData)
+        .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
+        .returning();
+      if (!replacedCategory) {
+        throw new CategoryNotFoundError();
+      }
 
-    return Category.parse(replacedCategory);
+      return Category.parse(replacedCategory);
+    } catch (error) {
+      if (error.code == '23505') {
+        if (error.detail.includes('name')) {
+          throw new CategoryAlreadyExistsError(
+            `Ya existe una categoría con nombre '${replacementData.name}' para el indicador '${replacementData.indicatorIndex}'`,
+            { cause: error },
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   async deleteCategory(

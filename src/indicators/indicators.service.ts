@@ -19,7 +19,6 @@ import { IndicatorCreation } from './schemas/indicator-creation.schema';
 import { IndicatorReplacementDto } from './dtos/indicator-replacement.dto';
 import { IndicatorReplacement } from './schemas/indicator-replacement.schema';
 import { CategoryIndicatorIndexDto } from 'src/categories/dtos/category-indicator-index.dto';
-import { DrizzleError } from 'drizzle-orm';
 
 export abstract class IndicatorsServiceError extends Error {}
 export class IndicatorNotFoundError extends IndicatorsServiceError {}
@@ -38,13 +37,13 @@ export class IndicatorsService {
     creationDataDto: IndicatorCreationDto,
     transaction?: DrizzleTransaction,
   ): Promise<IndicatorDto> {
-    try {
-      if (transaction === undefined) {
-        return await this.drizzleClient.transaction(async (transaction) => {
-          return await this.create(creationDataDto, transaction);
-        });
-      }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.create(creationDataDto, transaction);
+      });
+    }
 
+    try {
       const indicator = await this.indicatorsRepository.create(
         IndicatorCreation.parse(creationDataDto),
         transaction,
@@ -151,17 +150,17 @@ export class IndicatorsService {
     replacementDataDto: IndicatorReplacementDto,
     transaction?: DrizzleTransaction,
   ): Promise<IndicatorDto> {
-    try {
-      if (transaction === undefined) {
-        return await this.drizzleClient.transaction(async (transaction) => {
-          return await this.replace(
-            indicatorUniqueTraitDto,
-            replacementDataDto,
-            transaction,
-          );
-        });
-      }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.replace(
+          indicatorUniqueTraitDto,
+          replacementDataDto,
+          transaction,
+        );
+      });
+    }
 
+    try {
       const newIndicatorSchema = await this.indicatorsRepository.replace(
         IndicatorUniqueTrait.parse(indicatorUniqueTraitDto),
         IndicatorReplacement.parse(replacementDataDto),
@@ -181,6 +180,9 @@ export class IndicatorsService {
       if (error instanceof IndicatorNotFoundRepositoryError) {
         throw new IndicatorNotFoundError();
       }
+      if (error instanceof IndicatorAlreadyExistsRepositoryError) {
+        throw new IndicatorAlreadyExistsError(error.message, { cause: error });
+      }
 
       throw error;
     }
@@ -190,13 +192,13 @@ export class IndicatorsService {
     indicatorUniqueTraitDto: IndicatorUniqueTraitDto,
     transaction?: DrizzleTransaction,
   ): Promise<IndicatorDto> {
-    try {
-      if (transaction === undefined) {
-        return await this.drizzleClient.transaction(async (transaction) => {
-          return await this.delete(indicatorUniqueTraitDto, transaction);
-        });
-      }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.delete(indicatorUniqueTraitDto, transaction);
+      });
+    }
 
+    try {
       const categories = await this.categoriesService.findManyCategories(
         CategoryIndicatorIndexDto.create({
           indicatorIndex: indicatorUniqueTraitDto.index,

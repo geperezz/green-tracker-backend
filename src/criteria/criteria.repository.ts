@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { SQL, and, count, eq } from 'drizzle-orm';
+import { SQL, and, count, eq, isNull } from 'drizzle-orm';
 
 import { DrizzleClient, DrizzleTransaction } from 'src/drizzle/drizzle.client';
 import { criteriaTable } from './criteria.table';
@@ -27,13 +27,13 @@ export class CriteriaRepository {
     creationData: CriterionCreation,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
-    try {
-      if (transaction === undefined) {
-        return await this.drizzleClient.transaction(async (transaction) => {
-          return await this.createCriterion(creationData, transaction);
-        });
-      }
+    if (transaction === undefined) {
+      return await this.drizzleClient.transaction(async (transaction) => {
+        return await this.createCriterion(creationData, transaction);
+      });
+    }
 
+    try {
       const [createdCriterion] = await transaction
         .insert(criteriaTable)
         .values(creationData)
@@ -74,6 +74,7 @@ export class CriteriaRepository {
         return await this.findCriterion(uniqueTrait, transaction);
       });
     }
+
     const [foundCriterion = null] = await transaction
       .select()
       .from(criteriaTable)
@@ -153,20 +154,22 @@ export class CriteriaRepository {
     filters?: CriterionFilters,
   ): SQL | undefined {
     return and(
-      filters?.indicatorIndex
+      filters?.indicatorIndex !== undefined
         ? eq(criteriaTable.indicatorIndex, filters.indicatorIndex)
         : undefined,
-      filters?.subindex
+      filters?.subindex !== undefined
         ? eq(criteriaTable.subindex, filters.subindex)
         : undefined,
-      filters?.englishName
+      filters?.englishName !== undefined
         ? eq(criteriaTable.englishName, filters.englishName)
         : undefined,
-      filters?.spanishAlias
+      filters?.spanishAlias !== undefined
         ? eq(criteriaTable.spanishAlias, filters.spanishAlias)
         : undefined,
-      filters?.categoryName
-        ? eq(criteriaTable.categoryName, filters.categoryName)
+      filters?.categoryName !== undefined
+        ? filters.categoryName === null
+          ? isNull(criteriaTable.categoryName)
+          : eq(criteriaTable.categoryName, filters.categoryName)
         : undefined,
     );
   }
@@ -182,16 +185,40 @@ export class CriteriaRepository {
       });
     }
 
-    const [updatedCriterion = null] = await transaction
-      .update(criteriaTable)
-      .set(updateData)
-      .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
-      .returning();
-    if (!updatedCriterion) {
-      throw new CriterionNotFoundError();
-    }
+    try {
+      const [updatedCriterion = null] = await transaction
+        .update(criteriaTable)
+        .set(updateData)
+        .where(this.transformUniqueTraitToWhereConditions(uniqueTrait))
+        .returning();
+      if (!updatedCriterion) {
+        throw new CriterionNotFoundError();
+      }
 
-    return Criterion.parse(updatedCriterion);
+      return Criterion.parse(updatedCriterion);
+    } catch (error) {
+      if (error.code == '23505') {
+        if (error.detail.includes('index, subindex')) {
+          throw new CriterionAlreadyExistsError(
+            `Ya existe un criterio con subíndice '${updateData.subindex ?? uniqueTrait.subindex}' para el indicador '${updateData.indicatorIndex ?? uniqueTrait.indicatorIndex}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('spanish_alias')) {
+          throw new CriterionAlreadyExistsError(
+            `Ya existe un criterio con alias en español '${updateData.spanishAlias}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('english_name')) {
+          throw new CriterionAlreadyExistsError(
+            `Ya existe un criterio con nombre en inglés '${updateData.englishName}'`,
+            { cause: error },
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   async replaceCriterion(
@@ -199,11 +226,35 @@ export class CriteriaRepository {
     replacementData: CriterionReplacement,
     transaction?: DrizzleTransaction,
   ): Promise<Criterion> {
-    return await this.updateCriterion(
-      uniqueTrait,
-      CriterionUpdate.parse(replacementData),
-      transaction,
-    );
+    try {
+      return await this.updateCriterion(
+        uniqueTrait,
+        CriterionUpdate.parse(replacementData),
+        transaction,
+      );
+    } catch (error) {
+      if (error.code == '23505') {
+        if (error.detail.includes('index, subindex')) {
+          throw new CriterionAlreadyExistsError(
+            `Ya existe un criterio con subíndice '${replacementData.subindex}' para el indicador '${replacementData.indicatorIndex}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('spanish_alias')) {
+          throw new CriterionAlreadyExistsError(
+            `Ya existe un criterio con alias en español '${replacementData.spanishAlias}'`,
+            { cause: error },
+          );
+        }
+        if (error.detail.includes('english_name')) {
+          throw new CriterionAlreadyExistsError(
+            `Ya existe un criterio con nombre en inglés '${replacementData.englishName}'`,
+            { cause: error },
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   async deleteCriterion(

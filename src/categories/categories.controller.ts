@@ -116,6 +116,9 @@ export class CategoriesController {
           cause: error,
         });
       }
+      if (error instanceof CategoryAlreadyExistsError) {
+        throw new BadRequestException(error.message, { cause: error.cause });
+      }
 
       throw error;
     }

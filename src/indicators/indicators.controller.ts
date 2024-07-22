@@ -100,6 +100,9 @@ export class IndicatorsController {
           cause: error,
         });
       }
+      if (error instanceof IndicatorAlreadyExistsError) {
+        throw new BadRequestException(error.message, { cause: error.cause });
+      }
 
       throw error;
     }
